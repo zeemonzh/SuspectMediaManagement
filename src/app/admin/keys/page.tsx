@@ -1,0 +1,718 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+
+interface ProductKey {
+  id: string
+  key: string
+  product_name?: string // Keep for backwards compatibility
+  category_id?: string
+  is_assigned: boolean
+  assigned_to?: string
+  assigned_at?: string
+  created_at: string
+  streamers?: {
+    id: string
+    username: string
+    tiktok_username: string
+  }
+  product_categories?: {
+    id: string
+    name: string
+    description: string
+  }
+}
+
+interface ProductCategory {
+  id: string
+  name: string
+  description: string
+  created_at: string
+}
+
+interface KeyRequest {
+  id: string
+  streamer_id: string
+  streamer_username: string
+  reason: string
+  category_name?: string
+  status: 'pending' | 'approved' | 'denied'
+  admin_response?: string
+  created_at: string
+}
+
+export default function AdminProductKeys() {
+  const [productKeys, setProductKeys] = useState<ProductKey[]>([])
+  const [keyRequests, setKeyRequests] = useState<KeyRequest[]>([])
+  const [productCategories, setProductCategories] = useState<ProductCategory[]>([])
+  const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<'keys' | 'requests' | 'categories'>('requests')
+  const [showAddKeyModal, setShowAddKeyModal] = useState(false)
+  const [showAddCategoryModal, setShowAddCategoryModal] = useState(false)
+  const [newKeyValue, setNewKeyValue] = useState('')
+  const [selectedCategoryId, setSelectedCategoryId] = useState('')
+  const [newCategoryName, setNewCategoryName] = useState('')
+  const [newCategoryDescription, setNewCategoryDescription] = useState('')
+
+  useEffect(() => {
+    fetchProductKeys()
+    fetchKeyRequests()
+    fetchProductCategories()
+  }, [])
+
+  const fetchProductCategories = async () => {
+    try {
+      const response = await fetch('/api/product-categories')
+      if (response.ok) {
+        const data = await response.json()
+        setProductCategories(data)
+      }
+    } catch (error) {
+      console.error('Error fetching product categories:', error)
+    }
+  }
+
+  const fetchProductKeys = async () => {
+    try {
+      const response = await fetch('/api/product-keys')
+      if (response.ok) {
+        const data = await response.json()
+        setProductKeys(data)
+      }
+    } catch (error) {
+      console.error('Error fetching product keys:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchKeyRequests = async () => {
+    try {
+      const response = await fetch('/api/key-requests')
+      if (response.ok) {
+        const data = await response.json()
+        // Transform the data to match our interface
+        const transformedRequests = data.map((request: any) => ({
+          id: request.id,
+          streamer_id: request.streamer_id,
+          streamer_username: request.streamers?.username || 'Unknown',
+          reason: request.product_name || request.product_categories?.name || 'Unknown',
+          category_name: request.product_categories?.name,
+          status: request.status,
+          admin_response: request.admin_notes,
+          created_at: request.created_at
+        }))
+        setKeyRequests(transformedRequests)
+      }
+    } catch (error) {
+      console.error('Error fetching key requests:', error)
+    }
+  }
+
+  const addKey = async () => {
+    if (!newKeyValue.trim()) {
+      alert('Please enter a valid key')
+      return
+    }
+
+    if (!selectedCategoryId.trim()) {
+      alert('Please select a category')
+      return
+    }
+
+    try {
+      const response = await fetch('/api/product-keys', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          key: newKeyValue.trim(),
+          category_id: selectedCategoryId.trim()
+        })
+      })
+
+      if (response.ok) {
+        await fetchProductKeys() // Refresh the list
+        setShowAddKeyModal(false)
+        setNewKeyValue('')
+        setSelectedCategoryId('')
+        alert('Key added successfully!')
+      } else {
+        const error = await response.json()
+        alert(`Error: ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Error adding key:', error)
+      alert('Error adding key')
+    }
+  }
+
+  const addCategory = async () => {
+    if (!newCategoryName.trim()) {
+      alert('Please enter a category name')
+      return
+    }
+
+    try {
+      const response = await fetch('/api/product-categories', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: newCategoryName.trim(),
+          description: newCategoryDescription.trim()
+        })
+      })
+
+      if (response.ok) {
+        await fetchProductCategories() // Refresh the list
+        setShowAddCategoryModal(false)
+        setNewCategoryName('')
+        setNewCategoryDescription('')
+        alert('Category added successfully!')
+      } else {
+        const error = await response.json()
+        alert(`Error: ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Error adding category:', error)
+      alert('Error adding category')
+    }
+  }
+
+  const deleteCategory = async (categoryId: string, categoryName: string) => {
+    if (!confirm(`Are you sure you want to delete the category "${categoryName}"? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      const response = await fetch('/api/product-categories', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: categoryId
+        })
+      })
+
+      if (response.ok) {
+        await fetchProductCategories() // Refresh the list
+        alert('Category deleted successfully!')
+      } else {
+        const error = await response.json()
+        alert(`Error: ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Error deleting category:', error)
+      alert('Error deleting category')
+    }
+  }
+
+  const deleteKey = async (keyId: string, keyValue: string) => {
+    if (!confirm(`Are you sure you want to delete the key "${keyValue}"? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      const response = await fetch('/api/product-keys', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: keyId
+        })
+      })
+
+      if (response.ok) {
+        await fetchProductKeys() // Refresh the list
+        await fetchProductCategories() // Refresh categories to update key counts
+        alert('Key deleted successfully!')
+      } else {
+        const error = await response.json()
+        alert(`Error: ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Error deleting key:', error)
+      alert('Error deleting key')
+    }
+  }
+
+  const handleRequestAction = async (requestId: string, status: 'approved' | 'denied', response?: string) => {
+    try {
+      const apiResponse = await fetch(`/api/key-requests/${requestId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status,
+          admin_notes: response
+        })
+      })
+
+      if (apiResponse.ok) {
+        // Update local state
+        setKeyRequests(prev => prev.map(request => 
+          request.id === requestId
+            ? { ...request, status, admin_response: response }
+            : request
+        ))
+
+        // Refresh the product keys to show any new assignments
+        await fetchProductKeys()
+        
+        alert(`Request ${status} successfully`)
+      } else {
+        const error = await apiResponse.json()
+        alert(`Error: ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Error updating request:', error)
+      alert('Error updating request')
+    }
+  }
+
+  const stats = {
+    totalKeys: productKeys.length,
+    usedKeys: productKeys.filter(k => k.is_assigned).length,
+    availableKeys: productKeys.filter(k => !k.is_assigned).length,
+    pendingRequests: keyRequests.filter(r => r.status === 'pending').length
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-suspect-body flex items-center justify-center">
+        <div className="text-suspect-text">Loading product keys...</div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-suspect-body">
+      {/* Header */}
+      <header className="bg-suspect-header border-b border-suspect-gray-700">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center">
+              <Link href="/admin" className="text-2xl font-bold text-suspect-text">
+                SuspectCheats
+              </Link>
+              <span className="ml-2 text-suspect-gray-400">/ Product Keys</span>
+            </div>
+            <div className="flex items-center space-x-4">
+              <Link href="/admin" className="btn-secondary">
+                Back to Dashboard
+              </Link>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Page Header */}
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-suspect-text">Product Keys</h1>
+            <p className="text-suspect-gray-400 mt-2">
+              Manage product keys, categories, and streamer requests
+            </p>
+          </div>
+          <div className="flex space-x-3">
+            {activeTab === 'categories' ? (
+              <button
+                onClick={() => setShowAddCategoryModal(true)}
+                className="btn-primary"
+              >
+                Add Category
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowAddKeyModal(true)}
+                className="btn-primary"
+              >
+                Add New Key
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="card p-6">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-suspect-text">{stats.totalKeys}</p>
+              <p className="text-suspect-gray-400 text-sm">Total Keys</p>
+            </div>
+          </div>
+          <div className="card p-6">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-green-400">{stats.availableKeys}</p>
+              <p className="text-suspect-gray-400 text-sm">Available Keys</p>
+            </div>
+          </div>
+          <div className="card p-6">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-blue-400">{stats.usedKeys}</p>
+              <p className="text-suspect-gray-400 text-sm">Used Keys</p>
+            </div>
+          </div>
+          <div className="card p-6">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-yellow-400">{stats.pendingRequests}</p>
+              <p className="text-suspect-gray-400 text-sm">Pending Requests</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="card mb-8">
+          <div className="border-b border-suspect-gray-700">
+            <nav className="flex space-x-8 px-6">
+              <button
+                onClick={() => setActiveTab('requests')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'requests'
+                    ? 'border-suspect-primary text-suspect-primary'
+                    : 'border-transparent text-suspect-gray-400 hover:text-suspect-gray-300'
+                }`}
+              >
+                Key Requests ({stats.pendingRequests})
+              </button>
+              <button
+                onClick={() => setActiveTab('keys')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'keys'
+                    ? 'border-suspect-primary text-suspect-primary'
+                    : 'border-transparent text-suspect-gray-400 hover:text-suspect-gray-300'
+                }`}
+              >
+                All Keys ({stats.totalKeys})
+              </button>
+              <button
+                onClick={() => setActiveTab('categories')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'categories'
+                    ? 'border-suspect-primary text-suspect-primary'
+                    : 'border-transparent text-suspect-gray-400 hover:text-suspect-gray-300'
+                }`}
+              >
+                Categories ({productCategories.length})
+              </button>
+            </nav>
+          </div>
+
+          <div className="p-6">
+            {activeTab === 'requests' ? (
+              <div>
+                <h2 className="text-xl font-semibold text-suspect-text mb-4">Key Requests</h2>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-suspect-gray-700">
+                        <th className="text-left text-suspect-gray-400 py-3">Streamer</th>
+                        <th className="text-left text-suspect-gray-400 py-3">Product Name</th>
+                        <th className="text-left text-suspect-gray-400 py-3">Status</th>
+                        <th className="text-left text-suspect-gray-400 py-3">Date</th>
+                        <th className="text-left text-suspect-gray-400 py-3">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {keyRequests.map((request) => (
+                        <tr key={request.id} className="border-b border-suspect-gray-800">
+                          <td className="text-suspect-text py-4 font-medium">
+                            {request.streamer_username}
+                          </td>
+                          <td className="text-suspect-text py-4 max-w-xs">
+                            {request.reason}
+                          </td>
+                          <td className="py-4">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              request.status === 'approved'
+                                ? 'bg-green-100 text-green-800'
+                                : request.status === 'denied'
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {request.status}
+                            </span>
+                          </td>
+                          <td className="text-suspect-gray-400 py-4">
+                            {new Date(request.created_at).toLocaleDateString()}
+                          </td>
+                          <td className="py-4">
+                            {request.status === 'pending' ? (
+                              <div className="flex space-x-2">
+                                <button
+                                  onClick={() => handleRequestAction(request.id, 'approved', 'Request approved')}
+                                  className="text-green-400 hover:text-green-300 text-sm"
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={() => handleRequestAction(request.id, 'denied', 'Request denied')}
+                                  className="text-red-400 hover:text-red-300 text-sm"
+                                >
+                                  Deny
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-suspect-gray-400 text-sm">
+                                {request.admin_response}
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : activeTab === 'keys' ? (
+              <div>
+                <h2 className="text-xl font-semibold text-suspect-text mb-4">All Product Keys</h2>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-suspect-gray-700">
+                        <th className="text-left text-suspect-gray-400 py-3">Key</th>
+                        <th className="text-left text-suspect-gray-400 py-3">Product</th>
+                        <th className="text-left text-suspect-gray-400 py-3">Status</th>
+                        <th className="text-left text-suspect-gray-400 py-3">Assigned To</th>
+                        <th className="text-left text-suspect-gray-400 py-3">Assigned Date</th>
+                        <th className="text-left text-suspect-gray-400 py-3">Created</th>
+                        <th className="text-left text-suspect-gray-400 py-3">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {productKeys.map((key) => (
+                        <tr key={key.id} className="border-b border-suspect-gray-800">
+                          <td className="text-suspect-text py-4 font-mono">
+                            {key.key}
+                          </td>
+                          <td className="text-suspect-text py-4">
+                            {key.product_categories?.name || key.product_name || 'Unknown'}
+                          </td>
+                          <td className="py-4">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              key.is_assigned
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-green-100 text-green-800'
+                            }`}>
+                              {key.is_assigned ? 'Assigned' : 'Available'}
+                            </span>
+                          </td>
+                          <td className="text-suspect-text py-4">
+                            {key.streamers?.username || '-'}
+                          </td>
+                          <td className="text-suspect-gray-400 py-4">
+                            {key.assigned_at ? new Date(key.assigned_at).toLocaleDateString() : '-'}
+                          </td>
+                          <td className="text-suspect-gray-400 py-4">
+                            {new Date(key.created_at).toLocaleDateString()}
+                          </td>
+                          <td className="py-4">
+                            <button
+                              onClick={() => deleteKey(key.id, key.key)}
+                              className="text-red-400 hover:text-red-300 text-sm"
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <h2 className="text-xl font-semibold text-suspect-text mb-4">Product Categories</h2>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-suspect-gray-700">
+                        <th className="text-left text-suspect-gray-400 py-3">Category Name</th>
+                        <th className="text-left text-suspect-gray-400 py-3">Description</th>
+                        <th className="text-left text-suspect-gray-400 py-3">Keys Count</th>
+                        <th className="text-left text-suspect-gray-400 py-3">Created</th>
+                        <th className="text-left text-suspect-gray-400 py-3">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {productCategories.map((category) => {
+                        const keyCount = productKeys.filter(key => key.category_id === category.id).length
+                        const hasKeys = keyCount > 0
+                        return (
+                          <tr key={category.id} className="border-b border-suspect-gray-800">
+                            <td className="text-suspect-text py-4 font-medium">
+                              {category.name}
+                            </td>
+                            <td className="text-suspect-text py-4 max-w-xs">
+                              {category.description || '-'}
+                            </td>
+                            <td className="text-suspect-text py-4">
+                              {keyCount} keys
+                            </td>
+                            <td className="text-suspect-gray-400 py-4">
+                              {new Date(category.created_at).toLocaleDateString()}
+                            </td>
+                            <td className="py-4">
+                              {hasKeys ? (
+                                <span className="text-suspect-gray-400 text-sm" title="Cannot delete category with assigned keys">
+                                  Cannot delete
+                                </span>
+                              ) : (
+                                <button
+                                  onClick={() => deleteCategory(category.id, category.name)}
+                                  className="text-red-400 hover:text-red-300 text-sm"
+                                >
+                                  Delete
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Add Key Modal */}
+      {showAddKeyModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-suspect-header rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-medium text-suspect-text mb-4">Add New Product Key</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-suspect-text mb-2">
+                  Product Key
+                </label>
+                <input
+                  type="text"
+                  value={newKeyValue}
+                  onChange={(e) => setNewKeyValue(e.target.value)}
+                  placeholder="Enter product key (e.g., SUSPECT-2024-ABC123)"
+                  className="input-field w-full"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-suspect-text mb-2">
+                  Product Category
+                </label>
+                <select
+                  value={selectedCategoryId}
+                  onChange={(e) => setSelectedCategoryId(e.target.value)}
+                  className="input-field w-full"
+                >
+                  <option value="">Select a category</option>
+                  {productCategories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <p className="text-suspect-gray-400 text-xs">
+                Add the exact product key and assign it to a category
+              </p>
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowAddKeyModal(false)
+                  setNewKeyValue('')
+                  setSelectedCategoryId('')
+                }}
+                className="btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={addKey}
+                className="btn-primary"
+                disabled={!newKeyValue.trim() || !selectedCategoryId.trim()}
+              >
+                Add Key
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Category Modal */}
+      {showAddCategoryModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-suspect-header rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-medium text-suspect-text mb-4">Add New Category</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-suspect-text mb-2">
+                  Category Name
+                </label>
+                <input
+                  type="text"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  placeholder="e.g., Premium Cheat Package"
+                  className="input-field w-full"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-suspect-text mb-2">
+                  Description (Optional)
+                </label>
+                <textarea
+                  value={newCategoryDescription}
+                  onChange={(e) => setNewCategoryDescription(e.target.value)}
+                  placeholder="Brief description of this product category..."
+                  className="input-field w-full"
+                  rows={3}
+                />
+              </div>
+              
+              <p className="text-suspect-gray-400 text-xs">
+                Categories help organize product keys and make it easier for streamers to request the right type
+              </p>
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowAddCategoryModal(false)
+                  setNewCategoryName('')
+                  setNewCategoryDescription('')
+                }}
+                className="btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={addCategory}
+                className="btn-primary"
+                disabled={!newCategoryName.trim()}
+              >
+                Add Category
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+} 

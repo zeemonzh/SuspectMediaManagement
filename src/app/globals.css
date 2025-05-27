@@ -1,0 +1,150 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 255, 255, 255;
+  --background-start-rgb: 11, 12, 16;
+  --background-end-rgb: 20, 21, 26;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 11, 12, 16;
+    --background-end-rgb: 20, 21, 26;
+  }
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
+}
+
+@layer base {
+  body {
+    @apply bg-suspect-body text-suspect-text;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-suspect-nav border border-suspect-gray-700 rounded-lg shadow-lg;
+  }
+  
+  .btn-primary {
+    @apply bg-suspect-primary hover:bg-red-600 hover:scale-105 text-white font-medium px-4 py-2 rounded-lg transition-all duration-200 active:scale-95;
+  }
+  
+  .btn-secondary {
+    @apply bg-suspect-gray-600 hover:bg-suspect-gray-500 hover:scale-105 text-white font-medium px-4 py-2 rounded-lg transition-all duration-200 active:scale-95;
+  }
+  
+  .input-field {
+    @apply bg-suspect-dark border border-suspect-gray-600 rounded-lg px-3 py-2 text-suspect-text focus:outline-none focus:ring-2 focus:ring-suspect-primary focus:scale-105 transition-all duration-200;
+  }
+}
+
+@layer utilities {
+  /* Custom animations */
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  .animate-pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  .animate-bounce-subtle {
+    animation: bounce-subtle 2s infinite;
+  }
+  
+  .animate-slide-in-left {
+    animation: slide-in-left 0.5s ease-out;
+  }
+  
+  .animate-slide-in-right {
+    animation: slide-in-right 0.5s ease-out;
+  }
+  
+  .animate-fade-in-up {
+    animation: fade-in-up 0.6s ease-out;
+  }
+  
+  /* Loading dots animation */
+  .animate-dots::after {
+    content: '';
+    animation: dots 1.5s infinite;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes bounce-subtle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes slide-in-left {
+  0% {
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-right {
+  0% {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fade-in-up {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dots {
+  0%, 20% {
+    content: '';
+  }
+  40% {
+    content: '.';
+  }
+  60% {
+    content: '..';
+  }
+  80%, 100% {
+    content: '...';
+  }
+} 
