@@ -88,7 +88,7 @@ function StreamerGoalsTable({ allStreamers }: { allStreamers: Streamer[] }) {
   }
 
   if (loading) {
-    return <LoadingSpinner text="Loading streamer goals..." />
+    return <LoadingSpinner text="Loading streamer goals" />
   }
 
   return (
@@ -382,7 +382,7 @@ export default function AdminAnalytics() {
   const improvingStreamers = streamers.filter(s => s.growthRate > 0).sort((a, b) => b.growthRate - a.growthRate)
 
   if (loading) {
-    return <LoadingSpinner fullScreen text="Loading analytics..." />
+    return <LoadingSpinner fullScreen text="Loading analytics" />
   }
 
   return (

@@ -228,7 +228,7 @@ export default function StreamerDashboard() {
   const activeKey = assignedKeys[0] // Most recent key
 
   if (loading) {
-    return <LoadingSpinner fullScreen text="Loading streamer dashboard..." />
+    return <LoadingSpinner fullScreen text="Loading streamer dashboard" />
   }
 
   if (!user || streamer?.role !== 'streamer') {
@@ -373,7 +373,7 @@ export default function StreamerDashboard() {
               <p className="text-suspect-gray-400 text-sm mb-2">Your Assigned Keys:</p>
               {loadingKeys ? (
                 <div className="bg-suspect-dark p-3 rounded-lg border">
-                  <p className="text-suspect-gray-400 text-sm">Loading your keys...</p>
+                  <p className="text-suspect-gray-400 text-sm">Loading your keys</p>
                 </div>
               ) : assignedKeys.length === 0 ? (
                 <div className="bg-suspect-dark p-3 rounded-lg border">
@@ -479,7 +479,7 @@ export default function StreamerDashboard() {
           </div>
           
           {loadingStreams ? (
-            <div className="text-center text-suspect-gray-400 py-8">Loading streams...</div>
+            <div className="text-center text-suspect-gray-400 py-8">Loading streams</div>
           ) : streamSessions.length === 0 ? (
             <div className="text-center text-suspect-gray-400 py-8">
               No streams found. Start streaming to see your sessions here!

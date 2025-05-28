@@ -95,7 +95,7 @@ export default function AdminStreamers() {
   }
 
   if (loading) {
-    return <LoadingSpinner fullScreen text="Loading streamers..." />
+    return <LoadingSpinner fullScreen text="Loading streamers" />
   }
 
   return (

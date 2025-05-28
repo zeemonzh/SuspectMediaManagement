@@ -3,14 +3,16 @@ interface LoadingSpinnerProps {
   text?: string
   fullScreen?: boolean
   inline?: boolean
+  variant?: 'spinner' | 'inline' | 'card'
 }
 
-export default function LoadingSpinner({ 
-  size = 'md', 
-  text = 'Loading...', 
+const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
+  size = 'md',
+  text = 'Loading',
   fullScreen = false,
-  inline = false
-}: LoadingSpinnerProps) {
+  inline = false,
+  variant = 'spinner'
+}) => {
   const sizeClasses = {
     sm: 'w-6 h-6',
     md: 'w-12 h-12', 
@@ -34,11 +36,11 @@ export default function LoadingSpinner({
       </div>
       
       {/* Loading text with typing effect */}
-      <div className="flex items-center space-x-1">
+      <div className="flex items-baseline space-x-1">
         <span className="text-suspect-text font-medium animate-fade-in">
           {text}
         </span>
-        <div className="flex space-x-1">
+        <div className="flex space-x-1 translate-y-1">
           <div className="w-1 h-1 bg-suspect-primary rounded-full animate-bounce" style={{animationDelay: '0ms'}}></div>
           <div className="w-1 h-1 bg-suspect-primary rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
           <div className="w-1 h-1 bg-suspect-primary rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
@@ -87,4 +89,6 @@ export function LoadingDots({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
       <div className={`${dotSizes[size]} bg-suspect-primary rounded-full animate-bounce`} style={{animationDelay: '300ms'}}></div>
     </div>
   )
-} 
+}
+
+export default LoadingSpinner 

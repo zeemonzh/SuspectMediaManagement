@@ -27,7 +27,7 @@ export default function SetupPage() {
   }
 
   if (loading) {
-    return <LoadingSpinner fullScreen text="Checking setup status..." />
+    return <LoadingSpinner fullScreen text="Checking setup status" />
   }
 
   if (!user) {

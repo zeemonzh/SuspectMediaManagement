@@ -379,7 +379,7 @@ export default function AdminProductKeys() {
   }
 
   if (loading) {
-    return <LoadingSpinner fullScreen text="Loading product keys..." />
+    return <LoadingSpinner fullScreen text="Loading product keys" />
   }
 
   return (

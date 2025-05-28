@@ -181,7 +181,7 @@ export default function AdminSessions() {
   }
 
   if (authLoading || loading) {
-    return <LoadingSpinner fullScreen text="Loading stream sessions..." />
+    return <LoadingSpinner fullScreen text="Loading stream sessions" />
   }
 
   if (!user || !isAdmin) {

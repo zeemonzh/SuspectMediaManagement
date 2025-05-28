@@ -109,7 +109,7 @@ export default function AdminDashboard() {
   }
 
   if (loading) {
-    return <LoadingSpinner fullScreen text="Loading admin dashboard..." />
+    return <LoadingSpinner fullScreen text="Loading admin dashboard" />
   }
 
   if (!user || !isAdmin) {
@@ -282,7 +282,7 @@ export default function AdminDashboard() {
             <div className="text-center text-suspect-gray-400 py-8">
               <div className="flex flex-col items-center space-y-3">
                 <LoadingDots size="lg" />
-                <span className="text-suspect-gray-400">Loading activity...</span>
+                <span className="text-suspect-gray-400">Loading activity</span>
               </div>
             </div>
           ) : recentActivity.length === 0 ? (

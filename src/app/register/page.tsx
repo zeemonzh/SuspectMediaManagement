@@ -310,7 +310,7 @@ export default function RegisterPage() {
               disabled={loading}
               className="btn-primary w-full"
             >
-              {loading ? 'Creating account...' : 'Create account'}
+              {loading ? 'Creating account' : 'Create account'}
             </button>
           </div>
 

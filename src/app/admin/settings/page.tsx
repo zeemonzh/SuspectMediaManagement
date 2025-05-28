@@ -367,7 +367,7 @@ export default function AdminSettings() {
   }, [activityCategory])
 
   if (authLoading || loading) {
-    return <LoadingSpinner fullScreen text="Loading settings..." />
+    return <LoadingSpinner fullScreen text="Loading settings" />
   }
 
   if (!user || !isAdmin) {
@@ -764,7 +764,7 @@ export default function AdminSettings() {
 
             <div className="card p-6">
               {activityLoading && activityLogs.length === 0 ? (
-                <LoadingSpinner text="Loading activity logs..." />
+                <LoadingSpinner text="Loading activity logs" />
               ) : activityLogs.length === 0 ? (
                 <div className="text-center text-suspect-gray-400 py-8">
                   <div className="text-4xl mb-4">📋</div>
@@ -825,7 +825,7 @@ export default function AdminSettings() {
                       {activityLoading ? (
                         <div className="flex items-center justify-center space-x-2">
                           <LoadingDots size="sm" />
-                          <span>Loading...</span>
+                          <span>Loading</span>
                         </div>
                       ) : `Load More (${activityLogs.length}/${activityTotal})`}
                     </button>

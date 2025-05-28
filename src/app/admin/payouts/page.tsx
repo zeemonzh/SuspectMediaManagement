@@ -139,7 +139,7 @@ export default function AdminPayouts() {
   }
 
   if (authLoading || loading) {
-    return <LoadingSpinner fullScreen text="Loading payouts..." />
+    return <LoadingSpinner fullScreen text="Loading payouts" />
   }
 
   if (!user || !isAdmin) {
