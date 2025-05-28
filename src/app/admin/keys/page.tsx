@@ -277,6 +277,29 @@ export default function AdminProductKeys() {
     }
   }
 
+  // Helper function to get available key counts for a category
+  const getCategoryKeyInfo = (categoryName?: string) => {
+    const category = productCategories.find(c => c.name === categoryName)
+    if (!category) {
+      return {
+        availableKeys: productKeys.filter(k => !k.is_assigned).length,
+        categoryKeys: 0,
+        hasMatchingCategory: false
+      }
+    }
+
+    const categoryKeys = productKeys.filter(k => k.category_id === category.id)
+    const availableInCategory = categoryKeys.filter(k => !k.is_assigned).length
+    const totalAvailable = productKeys.filter(k => !k.is_assigned).length
+
+    return {
+      availableKeys: totalAvailable,
+      categoryKeys: availableInCategory,
+      hasMatchingCategory: true,
+      categoryName: category.name
+    }
+  }
+
   const stats = {
     totalKeys: productKeys.length,
     usedKeys: productKeys.filter(k => k.is_assigned).length,
@@ -422,52 +445,88 @@ export default function AdminProductKeys() {
                       </tr>
                     </thead>
                     <tbody>
-                      {keyRequests.map((request) => (
-                        <tr key={request.id} className="border-b border-suspect-gray-800">
-                          <td className="text-suspect-text py-4 font-medium">
-                            {request.streamer_username}
-                          </td>
-                          <td className="text-suspect-text py-4 max-w-xs">
-                            {request.reason}
-                          </td>
-                          <td className="py-4">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              request.status === 'approved'
-                                ? 'bg-green-100 text-green-800'
-                                : request.status === 'denied'
-                                ? 'bg-red-100 text-red-800'
-                                : 'bg-yellow-100 text-yellow-800'
-                            }`}>
-                              {request.status}
-                            </span>
-                          </td>
-                          <td className="text-suspect-gray-400 py-4">
-                            {new Date(request.created_at).toLocaleDateString()}
-                          </td>
-                          <td className="py-4">
-                            {request.status === 'pending' ? (
-                              <div className="flex space-x-2">
-                                <button
-                                  onClick={() => handleRequestAction(request.id, 'approved', 'Request approved')}
-                                  className="text-green-400 hover:text-green-300 text-sm"
-                                >
-                                  Approve
-                                </button>
-                                <button
-                                  onClick={() => handleRequestAction(request.id, 'denied', 'Request denied')}
-                                  className="text-red-400 hover:text-red-300 text-sm"
-                                >
-                                  Deny
-                                </button>
+                      {keyRequests.map((request) => {
+                        const keyInfo = getCategoryKeyInfo(request.category_name)
+                        const canApprove = keyInfo.availableKeys > 0
+                        
+                        return (
+                          <tr key={request.id} className="border-b border-suspect-gray-800">
+                            <td className="text-suspect-text py-4 font-medium">
+                              {request.streamer_username}
+                            </td>
+                            <td className="text-suspect-text py-4 max-w-xs">
+                              <div>
+                                <div>{request.reason}</div>
+                                {keyInfo.hasMatchingCategory && request.status === 'pending' && (
+                                  <div className="text-xs text-suspect-gray-400 mt-1">
+                                    {keyInfo.categoryKeys > 0 ? (
+                                      <span className="text-green-400">
+                                        {keyInfo.categoryKeys} available in {keyInfo.categoryName}
+                                      </span>
+                                    ) : keyInfo.availableKeys > 0 ? (
+                                      <span className="text-yellow-400">
+                                        No {keyInfo.categoryName} keys, {keyInfo.availableKeys} other keys available
+                                      </span>
+                                    ) : (
+                                      <span className="text-red-400">
+                                        No keys available
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
                               </div>
-                            ) : (
-                              <span className="text-suspect-gray-400 text-sm">
-                                {request.admin_response}
+                            </td>
+                            <td className="py-4">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                request.status === 'approved'
+                                  ? 'bg-green-100 text-green-800'
+                                  : request.status === 'denied'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                {request.status}
                               </span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
+                            </td>
+                            <td className="text-suspect-gray-400 py-4">
+                              {new Date(request.created_at).toLocaleDateString()}
+                            </td>
+                            <td className="py-4">
+                              {request.status === 'pending' ? (
+                                <div className="flex space-x-2">
+                                  <button
+                                    onClick={() => {
+                                      if (!canApprove) {
+                                        alert(`Cannot approve: No available keys in the system. Please add more keys before approving requests.`)
+                                        return
+                                      }
+                                      handleRequestAction(request.id, 'approved', 'Request approved')
+                                    }}
+                                    className={`text-sm ${
+                                      canApprove 
+                                        ? 'text-green-400 hover:text-green-300'
+                                        : 'text-gray-500 cursor-not-allowed'
+                                    }`}
+                                    disabled={!canApprove}
+                                    title={canApprove ? 'Approve request' : 'No available keys'}
+                                  >
+                                    Approve {!canApprove && '⚠️'}
+                                  </button>
+                                  <button
+                                    onClick={() => handleRequestAction(request.id, 'denied', 'Request denied')}
+                                    className="text-red-400 hover:text-red-300 text-sm"
+                                  >
+                                    Deny
+                                  </button>
+                                </div>
+                              ) : (
+                                <span className="text-suspect-gray-400 text-sm">
+                                  {request.admin_response}
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      })}
                     </tbody>
                   </table>
                 </div>

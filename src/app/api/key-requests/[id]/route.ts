@@ -71,25 +71,38 @@ export async function PATCH(
         availableKey = anyKey;
       }
 
-      if (availableKey) {
-        // Assign the key to the streamer
-        await supabase
-          .from('product_keys')
-          .update({
-            is_assigned: true,
-            assigned_to: updatedRequest.streamer_id,
-            assigned_at: new Date().toISOString()
-          })
-          .eq('id', availableKey.id)
-
-        // Update the key request with the assigned key
-        await supabase
-          .from('key_requests')
-          .update({
-            assigned_key_id: availableKey.id
-          })
-          .eq('id', requestId)
+      // Check if we found an available key
+      if (!availableKey) {
+        return NextResponse.json(
+          { error: 'Cannot approve request: No available keys in the system. Please add more keys before approving.' },
+          { status: 400 }
+        )
       }
+
+      // Assign the key to the streamer
+      const { error: assignError } = await supabase
+        .from('product_keys')
+        .update({
+          is_assigned: true,
+          assigned_to: updatedRequest.streamer_id,
+          assigned_at: new Date().toISOString()
+        })
+        .eq('id', availableKey.id)
+
+      if (assignError) {
+        return NextResponse.json(
+          { error: 'Failed to assign key to streamer' },
+          { status: 500 }
+        )
+      }
+
+      // Update the key request with the assigned key
+      await supabase
+        .from('key_requests')
+        .update({
+          assigned_key_id: availableKey.id
+        })
+        .eq('id', requestId)
     }
 
     return NextResponse.json(updatedRequest)
