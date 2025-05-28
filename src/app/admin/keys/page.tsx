@@ -12,6 +12,10 @@ interface ProductKey {
   assigned_to?: string
   assigned_at?: string
   created_at: string
+  expires_at?: string
+  hours_left?: number
+  minutes_left?: number
+  is_expired?: boolean
   streamers?: {
     id: string
     username: string
@@ -66,9 +70,31 @@ export default function AdminProductKeys() {
     fetchData()
   }, [activeTab])
 
+  // Initial data load - fetch all data on first mount
+  useEffect(() => {
+    fetchAllData()
+  }, [])
+
+  const fetchAllData = async () => {
+    setLoading(true)
+    try {
+      await Promise.all([
+        fetchProductCategories(),
+        fetchProductKeys(),
+        fetchKeyRequests()
+      ])
+      // Mark all data as initially loaded
+      setDataCache({ keys: true, requests: false, categories: true }) // requests always fresh
+    } catch (error) {
+      console.error('Error fetching initial data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const fetchData = async () => {
     // Key requests should always be fresh since they change frequently
-    // Other tabs can use cache safely
+    // Other tabs can use cache safely if data has been loaded
     if (dataCache[activeTab] && activeTab !== 'requests') {
       setLoading(false)
       return
@@ -79,18 +105,16 @@ export default function AdminProductKeys() {
       switch (activeTab) {
         case 'keys':
           await fetchProductKeys()
+          setDataCache(prev => ({ ...prev, keys: true }))
           break
         case 'requests':
           await fetchKeyRequests()
+          // Don't cache requests - always fresh
           break
         case 'categories':
           await fetchProductCategories()
+          setDataCache(prev => ({ ...prev, categories: true }))
           break
-      }
-      
-      // Mark this tab's data as cached (except requests which are always fresh)
-      if (activeTab !== 'requests') {
-        setDataCache(prev => ({ ...prev, [activeTab]: true }))
       }
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -611,19 +635,33 @@ export default function AdminProductKeys() {
                               {key.product_categories?.name || key.product_name || 'Unknown'}
                             </td>
                             <td className="py-4 px-4">
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                key.is_assigned
-                                  ? 'bg-blue-100 text-blue-800'
-                                  : 'bg-green-100 text-green-800'
-                              }`}>
-                                {key.is_assigned ? 'Assigned' : 'Available'}
-                              </span>
+                              <div className="flex items-center space-x-2">
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                  key.is_assigned
+                                    ? 'bg-blue-100 text-blue-800'
+                                    : 'bg-green-100 text-green-800'
+                                }`}>
+                                  {key.is_assigned ? 'Assigned' : 'Available'}
+                                </span>
+                                {key.is_assigned && key.hours_left !== undefined && (
+                                  <span className="text-xs text-red-400 font-medium">
+                                    ⏰ {key.hours_left}h {key.minutes_left}m left
+                                  </span>
+                                )}
+                              </div>
                             </td>
                             <td className="text-suspect-text py-4 px-4">
                               {key.streamers?.username || '-'}
                             </td>
                             <td className="text-suspect-gray-400 py-4 px-4">
-                              {key.assigned_at ? new Date(key.assigned_at).toLocaleDateString() : '-'}
+                              <div>
+                                <div>{key.assigned_at ? new Date(key.assigned_at).toLocaleDateString() : '-'}</div>
+                                {key.is_assigned && key.expires_at && (
+                                  <div className="text-xs text-red-400">
+                                    Expires: {new Date(key.expires_at).toLocaleDateString()} at {new Date(key.expires_at).toLocaleTimeString()}
+                                  </div>
+                                )}
+                              </div>
                             </td>
                             <td className="text-suspect-gray-400 py-4 px-4">
                               {new Date(key.created_at).toLocaleDateString()}

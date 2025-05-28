@@ -76,9 +76,29 @@ export default function AdminSettings() {
     }
   }, [isAdmin, activeTab])
 
+  // Initial data load for the default tab
+  useEffect(() => {
+    if (isAdmin) {
+      fetchInitialData()
+    }
+  }, [isAdmin])
+
+  const fetchInitialData = async () => {
+    setLoading(true)
+    try {
+      // Load data for the default active tab (invitations)
+      await fetchInvitationKeys()
+      setDataCache(prev => ({ ...prev, invitations: true }))
+    } catch (error) {
+      console.error('Error fetching initial data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const fetchData = async () => {
     // Activity logs should always be fresh since they change frequently
-    // Other tabs can use cache safely
+    // Other tabs can use cache safely if data has been loaded
     if (dataCache[activeTab] && activeTab !== 'logs') {
       setLoading(false)
       return
@@ -90,21 +110,20 @@ export default function AdminSettings() {
       switch (activeTab) {
         case 'invitations':
           await fetchInvitationKeys()
+          setDataCache(prev => ({ ...prev, invitations: true }))
           break
         case 'users':
           await fetchStreamers()
+          setDataCache(prev => ({ ...prev, users: true }))
           break
         case 'system':
           await fetchSecuritySettings()
+          setDataCache(prev => ({ ...prev, system: true }))
           break
         case 'logs':
           await fetchActivityLogs()
+          // Don't cache logs - always fresh
           break
-      }
-      
-      // Mark this tab's data as cached (except logs which are always fresh)
-      if (activeTab !== 'logs') {
-        setDataCache(prev => ({ ...prev, [activeTab]: true }))
       }
     } catch (error) {
       console.error('Error fetching data:', error)

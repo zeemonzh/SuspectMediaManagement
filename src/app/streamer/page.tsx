@@ -48,6 +48,10 @@ export default function StreamerDashboard() {
     id: string
     key: string
     assigned_at: string
+    expires_at?: string
+    hours_left?: number
+    minutes_left?: number
+    is_expired?: boolean
     product_categories?: {
       id: string
       name: string
@@ -218,6 +222,10 @@ export default function StreamerDashboard() {
     }
   }
 
+  // Check if streamer has any active keys
+  const hasActiveKey = assignedKeys.length > 0
+  const activeKey = assignedKeys[0] // Most recent key
+
   if (loading) {
     return (
       <div className="min-h-screen bg-suspect-body flex items-center justify-center">
@@ -354,7 +362,14 @@ export default function StreamerDashboard() {
 
           {/* Product Keys */}
           <div className="card p-6">
-            <h2 className="text-xl font-semibold text-suspect-text mb-4">Product Keys</h2>
+            <h2 className="text-xl font-semibold text-suspect-text mb-4">
+              Product Keys
+              {hasActiveKey && (
+                <span className="ml-2 text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full">
+                  ⏰ {activeKey.hours_left}h {activeKey.minutes_left}m left
+                </span>
+              )}
+            </h2>
             
             {/* Current Keys */}
             <div className="mb-6">
@@ -365,21 +380,40 @@ export default function StreamerDashboard() {
                 </div>
               ) : assignedKeys.length === 0 ? (
                 <div className="bg-suspect-dark p-3 rounded-lg border">
-                  <p className="text-suspect-gray-400 text-sm">No keys assigned yet. Request a key below!</p>
+                  <p className="text-suspect-gray-400 text-sm">No active keys. Request a key below!</p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {assignedKeys.map((keyData) => (
-                    <div key={keyData.id} className="bg-suspect-dark p-3 rounded-lg border">
-                      <div className="flex justify-between items-center">
-                        <code className="text-suspect-primary font-mono">{keyData.key}</code>
-                        <span className="text-suspect-gray-400 text-xs">
-                          {keyData.product_categories?.name || 'Unknown Category'}
-                        </span>
+                    <div key={keyData.id} className="bg-suspect-dark p-3 rounded-lg border border-green-500/30">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <code className="text-suspect-primary font-mono text-lg">{keyData.key}</code>
+                            <span className="text-suspect-gray-400 text-xs">
+                              {keyData.product_categories?.name || 'Unknown Category'}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-suspect-gray-400">
+                              Assigned: {new Date(keyData.assigned_at).toLocaleDateString()} at {new Date(keyData.assigned_at).toLocaleTimeString()}
+                            </span>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-red-400 font-medium">
+                                ⏰ Expires in {keyData.hours_left}h {keyData.minutes_left}m
+                              </span>
+                              <div className="w-16 bg-red-900/50 rounded-full h-2">
+                                <div 
+                                  className="bg-red-500 h-2 rounded-full transition-all duration-300"
+                                  style={{ 
+                                    width: `${Math.max(5, ((keyData.hours_left || 0) * 60 + (keyData.minutes_left || 0)) / (24 * 60) * 100)}%` 
+                                  }}
+                                ></div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-suspect-gray-400 text-xs mt-1">
-                        Assigned: {new Date(keyData.assigned_at).toLocaleDateString()}
-                      </p>
                     </div>
                   ))}
                 </div>
@@ -389,30 +423,49 @@ export default function StreamerDashboard() {
             {/* Request New Key */}
             <div>
               <p className="text-suspect-gray-400 text-sm mb-2">Request New Product Key:</p>
-              <div className="flex space-x-2">
-                <select
-                  value={selectedCategoryId}
-                  onChange={(e) => setSelectedCategoryId(e.target.value)}
-                  className="flex-1 input-field"
-                >
-                  <option value="">Select a category...</option>
-                  {productCategories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  onClick={handleKeyRequest}
-                  className="btn-primary"
-                  disabled={!selectedCategoryId.trim()}
-                >
-                  Request
-                </button>
-              </div>
-              <p className="text-suspect-gray-400 text-xs mt-2">
-                Requests are reviewed by admins and typically processed within 24 hours.
-              </p>
+              
+              {hasActiveKey ? (
+                <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-4">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <span className="text-yellow-400">⚠️</span>
+                    <span className="text-yellow-400 font-medium">Active Key Found</span>
+                  </div>
+                  <p className="text-yellow-300 text-sm">
+                    You currently have an active key that expires in {activeKey.hours_left}h {activeKey.minutes_left}m. 
+                    You can request a new key after your current one expires.
+                  </p>
+                  <p className="text-yellow-400 text-xs mt-2">
+                    ⏰ Current key expires: {activeKey.expires_at ? new Date(activeKey.expires_at).toLocaleString() : 'Unknown'}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex space-x-2">
+                    <select
+                      value={selectedCategoryId}
+                      onChange={(e) => setSelectedCategoryId(e.target.value)}
+                      className="flex-1 input-field"
+                    >
+                      <option value="">Select a category...</option>
+                      {productCategories.map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={handleKeyRequest}
+                      className="btn-primary"
+                      disabled={!selectedCategoryId.trim()}
+                    >
+                      Request
+                    </button>
+                  </div>
+                  <p className="text-suspect-gray-400 text-xs mt-2">
+                    🔑 Keys are valid for 24 hours after assignment. Requests are reviewed by admins and typically processed within 24 hours.
+                  </p>
+                </>
+              )}
             </div>
           </div>
         </div>
