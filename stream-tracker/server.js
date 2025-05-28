@@ -260,7 +260,7 @@ class StreamTracker {
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
-    // Check for new streamers every 5 minutes
+    // Check for new streamers every 3 minutes
     setInterval(async () => {
       const currentStreamers = await this.getActiveStreamers();
       for (const streamer of currentStreamers) {
@@ -269,7 +269,7 @@ class StreamTracker {
           await this.startTracking(streamer);
         }
       }
-    }, 5 * 60 * 1000);
+    }, 3 * 60 * 1000);
 
     console.log('✅ Stream tracker is running!');
   }
