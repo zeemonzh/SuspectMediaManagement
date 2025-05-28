@@ -47,6 +47,15 @@ export default function AdminDashboard() {
     if (isAdmin) {
       fetchDashboardStats()
       fetchRecentActivity()
+      
+      // Set up auto-refresh intervals
+      const statsInterval = setInterval(fetchDashboardStats, 60000) // Every minute
+      const activityInterval = setInterval(fetchRecentActivity, 30000) // Every 30 seconds
+      
+      return () => {
+        clearInterval(statsInterval)
+        clearInterval(activityInterval)
+      }
     }
   }, [isAdmin])
 

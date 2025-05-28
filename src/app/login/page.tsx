@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useAuth } from '@/contexts/AuthContext'
 
 export default function LoginPage() {
@@ -33,8 +34,18 @@ export default function LoginPage() {
     <div className="min-h-screen bg-suspect-body flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <div className="mx-auto h-12 w-12 flex items-center justify-center">
-            <div className="text-2xl font-bold text-suspect-primary">SC</div>
+          <div className="mx-auto h-20 w-20 flex items-center justify-center">
+            <div className="relative">
+              <Image
+                src="/logo.png"
+                alt="SuspectCheats Logo"
+                width={80}
+                height={80}
+                className="object-contain rounded-full shadow-2xl shadow-suspect-primary/30 border-2 border-suspect-primary/20 hover:shadow-suspect-primary/50 hover:border-suspect-primary/40 transition-all duration-300 hover:scale-105"
+                priority
+              />
+              <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-suspect-primary/20 to-purple-500/20 blur-sm opacity-60 animate-pulse"></div>
+            </div>
           </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-suspect-text">
             Sign in to your account

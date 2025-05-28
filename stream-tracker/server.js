@@ -177,7 +177,20 @@ class StreamTracker {
 
   async endStreamSession(streamerId) {
     const session = this.streamSessions.get(streamerId);
-    if (!session) return;
+    if (!session) {
+      // Clean up any orphaned sessions for this streamer
+      console.log(`🧹 Cleaning up any orphaned sessions for streamer ${streamerId}`);
+      try {
+        await supabase
+          .from('stream_sessions')
+          .update({ end_time: new Date().toISOString() })
+          .eq('streamer_id', streamerId)
+          .is('end_time', null);
+      } catch (error) {
+        console.error('Error cleaning up orphaned sessions:', error);
+      }
+      return;
+    }
 
     const endTime = new Date();
     const durationMinutes = Math.round((endTime - session.startTime) / 60000);
@@ -249,6 +262,9 @@ class StreamTracker {
   async start() {
     console.log('🚀 Starting SuspectCheats Stream Tracker...');
     
+    // Clean up any orphaned sessions from previous runs
+    await this.cleanupOrphanedSessions();
+    
     // Initial load of streamers
     const streamers = await this.getActiveStreamers();
     console.log(`📋 Found ${streamers.length} active streamers`);
@@ -272,6 +288,33 @@ class StreamTracker {
     }, 3 * 60 * 1000);
 
     console.log('✅ Stream tracker is running!');
+  }
+
+  async cleanupOrphanedSessions() {
+    try {
+      console.log('🧹 Cleaning up orphaned sessions from previous runs...');
+      
+      // End any sessions that don't have an end_time and are older than 10 minutes
+      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+      
+      const { data: orphanedSessions, error } = await supabase
+        .from('stream_sessions')
+        .update({ 
+          end_time: new Date().toISOString(),
+          duration_minutes: 1 // Minimal duration for orphaned sessions
+        })
+        .is('end_time', null)
+        .lt('start_time', tenMinutesAgo.toISOString())
+        .select('id, streamer_id');
+
+      if (error) throw error;
+      
+      if (orphanedSessions && orphanedSessions.length > 0) {
+        console.log(`🧹 Cleaned up ${orphanedSessions.length} orphaned sessions`);
+      }
+    } catch (error) {
+      console.error('Error cleaning up orphaned sessions:', error);
+    }
   }
 
   stop() {
