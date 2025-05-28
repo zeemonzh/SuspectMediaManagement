@@ -442,74 +442,78 @@ export default function AdminSessions() {
             {/* Sessions Table */}
             <div className="card p-6">
               <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-suspect-gray-700">
-                      <th className="text-left text-suspect-gray-400 py-3">Streamer</th>
-                      <th className="text-left text-suspect-gray-400 py-3">Start Time</th>
-                      <th className="text-left text-suspect-gray-400 py-3">Duration</th>
-                      <th className="text-left text-suspect-gray-400 py-3">Avg Viewers</th>
-                      <th className="text-left text-suspect-gray-400 py-3">Peak Viewers</th>
-                      <th className="text-left text-suspect-gray-400 py-3">Payout</th>
-                      <th className="text-left text-suspect-gray-400 py-3">Status</th>
-                      <th className="text-left text-suspect-gray-400 py-3">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sessions.map((session) => (
-                      <tr key={session.id} className="border-b border-suspect-gray-800">
-                        <td className="py-4">
-                          <div>
-                            <p className="text-suspect-text font-medium">
-                              {session.streamers.username}
-                            </p>
-                            <p className="text-suspect-gray-400 text-sm">
-                              @{session.streamers.tiktok_username}
-                            </p>
-                          </div>
-                        </td>
-                        <td className="text-suspect-text py-4">
-                          {formatTimestamp(session.start_time)}
-                        </td>
-                        <td className="text-suspect-text py-4">
-                          {formatDuration(session.duration_minutes)}
-                        </td>
-                        <td className="text-suspect-text py-4">
-                          {session.average_viewers?.toLocaleString() || 'N/A'}
-                        </td>
-                        <td className="text-suspect-text py-4">
-                          {session.peak_viewers?.toLocaleString() || 'N/A'}
-                        </td>
-                        <td className="text-suspect-text py-4">
-                          ${session.payout_amount?.toFixed(2) || '0.00'}
-                        </td>
-                        <td className="py-4">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            session.is_live 
-                              ? 'bg-red-500/20 text-red-400' 
-                              : 'bg-green-500/20 text-green-400'
-                          }`}>
-                            {session.is_live ? 'Live' : 'Completed'}
-                          </span>
-                        </td>
-                        <td className="py-4">
-                          <button
-                            onClick={() => {
-                              setSelectedSession(session)
-                              setShowSessionModal(true)
-                            }}
-                            className="text-suspect-primary hover:text-suspect-primary-light text-sm"
-                          >
-                            View Details
-                          </button>
-                        </td>
+                <div className="max-h-[500px] overflow-y-auto border border-suspect-gray-700 rounded-lg">
+                  <table className="w-full">
+                    <thead className="sticky top-0 bg-suspect-header z-10">
+                      <tr className="border-b border-suspect-gray-700">
+                        <th className="text-left text-suspect-gray-400 py-3 px-4">Streamer</th>
+                        <th className="text-left text-suspect-gray-400 py-3 px-4">Start Time</th>
+                        <th className="text-left text-suspect-gray-400 py-3 px-4">Duration</th>
+                        <th className="text-left text-suspect-gray-400 py-3 px-4">Avg Viewers</th>
+                        <th className="text-left text-suspect-gray-400 py-3 px-4">Peak Viewers</th>
+                        <th className="text-left text-suspect-gray-400 py-3 px-4">Payout</th>
+                        <th className="text-left text-suspect-gray-400 py-3 px-4">Status</th>
+                        <th className="text-left text-suspect-gray-400 py-3 px-4">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {sessions.map((session) => (
+                        <tr key={session.id} className="border-b border-suspect-gray-800 hover:bg-suspect-gray-800/30 transition-colors">
+                          <td className="text-suspect-text py-4 px-4 font-medium">
+                            <div>
+                              <div>{session.streamers.username}</div>
+                              <div className="text-sm text-suspect-gray-400">{session.streamers.tiktok_username}</div>
+                            </div>
+                          </td>
+                          <td className="text-suspect-gray-400 py-4 px-4">
+                            {formatTimestamp(session.start_time)}
+                          </td>
+                          <td className="text-suspect-text py-4 px-4">
+                            {session.is_live ? getCurrentDuration(session.start_time) : formatDuration(session.duration_minutes)}
+                            {session.is_live && <span className="ml-2 text-red-500 animate-pulse">● LIVE</span>}
+                          </td>
+                          <td className="text-suspect-text py-4 px-4">
+                            {session.average_viewers?.toLocaleString() || '-'}
+                          </td>
+                          <td className="text-suspect-text py-4 px-4">
+                            {session.peak_viewers?.toLocaleString() || '-'}
+                          </td>
+                          <td className="text-suspect-text py-4 px-4">
+                            {session.payout_amount ? `$${session.payout_amount.toFixed(2)}` : '-'}
+                          </td>
+                          <td className="py-4 px-4">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              session.is_live 
+                                ? 'bg-red-500/20 text-red-400 animate-pulse' 
+                                : 'bg-blue-500/20 text-blue-400'
+                            }`}>
+                              {session.is_live ? 'Live' : 'Completed'}
+                            </span>
+                          </td>
+                          <td className="py-4 px-4">
+                            <button
+                              onClick={() => {
+                                setSelectedSession(session)
+                                setShowSessionModal(true)
+                              }}
+                              className="text-suspect-primary hover:text-suspect-primary-light text-sm"
+                            >
+                              View Details
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
                 {sessions.length === 0 && (
                   <div className="text-center text-suspect-gray-400 py-8">
                     No sessions found matching your criteria.
+                  </div>
+                )}
+                {sessions.length > 8 && (
+                  <div className="text-center text-suspect-gray-400 text-sm mt-2">
+                    Showing {sessions.length} sessions • Scroll to view more
                   </div>
                 )}
               </div>

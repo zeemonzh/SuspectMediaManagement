@@ -68,6 +68,15 @@ export default function StreamerDashboard() {
       fetchStreamSessions()
       fetchStreamerGoals()
       fetchAssignedKeys()
+      
+      // Set up auto-refresh for dynamic data
+      const keysInterval = setInterval(fetchAssignedKeys, 120000) // Every 2 minutes for new keys
+      const goalsInterval = setInterval(fetchStreamerGoals, 300000) // Every 5 minutes for goal changes
+      
+      return () => {
+        clearInterval(keysInterval)
+        clearInterval(goalsInterval)
+      }
     }
     fetchProductCategories()
   }, [streamer])
@@ -427,80 +436,87 @@ export default function StreamerDashboard() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-suspect-gray-700">
-                    <th className="text-left text-suspect-gray-400 py-3">Date</th>
-                    <th className="text-left text-suspect-gray-400 py-3">Duration</th>
-                    <th className="text-left text-suspect-gray-400 py-3">Total Viewers</th>
-                    <th className="text-left text-suspect-gray-400 py-3">Goals</th>
-                    <th className="text-left text-suspect-gray-400 py-3">Payout</th>
-                    <th className="text-left text-suspect-gray-400 py-3">Status</th>
-                    <th className="text-left text-suspect-gray-400 py-3">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {streamSessions.map((session) => (
-                    <tr key={session.id} className="border-b border-suspect-gray-800">
-                      <td className="text-suspect-text py-4">
-                        {new Date(session.start_time).toLocaleDateString()}
-                      </td>
-                      <td className="text-suspect-text py-4">
-                        {Math.floor(session.duration_minutes / 60)}h {session.duration_minutes % 60}m
-                      </td>
-                                             <td className="text-suspect-text py-4">
+              <div className="max-h-96 overflow-y-auto border border-suspect-gray-700 rounded-lg">
+                <table className="w-full">
+                  <thead className="sticky top-0 bg-suspect-header z-10">
+                    <tr className="border-b border-suspect-gray-700">
+                      <th className="text-left text-suspect-gray-400 py-3 px-4">Date</th>
+                      <th className="text-left text-suspect-gray-400 py-3 px-4">Duration</th>
+                      <th className="text-left text-suspect-gray-400 py-3 px-4">Total Viewers</th>
+                      <th className="text-left text-suspect-gray-400 py-3 px-4">Goals</th>
+                      <th className="text-left text-suspect-gray-400 py-3 px-4">Payout</th>
+                      <th className="text-left text-suspect-gray-400 py-3 px-4">Status</th>
+                      <th className="text-left text-suspect-gray-400 py-3 px-4">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {streamSessions.map((session) => (
+                      <tr key={session.id} className="border-b border-suspect-gray-800 hover:bg-suspect-gray-800/30 transition-colors">
+                        <td className="text-suspect-text py-4 px-4">
+                          {new Date(session.start_time).toLocaleDateString()}
+                        </td>
+                        <td className="text-suspect-text py-4 px-4">
+                          {Math.floor(session.duration_minutes / 60)}h {session.duration_minutes % 60}m
+                        </td>
+                        <td className="text-suspect-text py-4 px-4">
                          {session.total_viewers?.toLocaleString() || '0'}
                        </td>
-                      <td className="py-4">
-                        <div className="flex space-x-1">
-                          <span className={`px-2 py-1 rounded text-xs ${
-                            session.meets_time_goal ? 'bg-green-900/50 text-green-300' : 'bg-red-900/50 text-red-300'
-                          }`}>
-                            {session.meets_time_goal ? '⏱️' : '❌'} Time
-                          </span>
-                          <span className={`px-2 py-1 rounded text-xs ${
-                            session.meets_viewer_goal ? 'bg-green-900/50 text-green-300' : 'bg-red-900/50 text-red-300'
-                          }`}>
-                            {session.meets_viewer_goal ? '👀' : '❌'} Views
-                          </span>
-                        </div>
-                      </td>
-                      <td className="text-suspect-text py-4 font-semibold">
-                        ${session.payout_amount.toFixed(2)}
-                      </td>
-                      <td className="py-4">
-                        {session.payout_requests.length > 0 ? (
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            session.payout_requests[0].status === 'approved'
-                              ? 'bg-green-100 text-green-800'
-                              : session.payout_requests[0].status === 'denied'
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {session.payout_requests[0].status}
-                          </span>
-                        ) : session.meets_time_goal ? (
-                          <span className="text-green-400 text-sm">Eligible</span>
-                        ) : (
-                          <span className="text-red-400 text-sm">Not eligible</span>
-                        )}
-                      </td>
-                      <td className="py-4">
-                        {session.meets_time_goal && session.payout_requests.length === 0 ? (
-                          <button
-                            onClick={() => requestPayout(session.id)}
-                            className="bg-suspect-primary hover:bg-suspect-primary/80 text-white px-3 py-1 rounded text-sm"
-                          >
-                            Request Payout
-                          </button>
-                        ) : (
-                          <span className="text-suspect-gray-400 text-sm">-</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        <td className="py-4 px-4">
+                          <div className="flex space-x-1">
+                            <span className={`px-2 py-1 rounded text-xs ${
+                              session.meets_time_goal ? 'bg-green-900/50 text-green-300' : 'bg-red-900/50 text-red-300'
+                            }`}>
+                              {session.meets_time_goal ? '⏱️' : '❌'} Time
+                            </span>
+                            <span className={`px-2 py-1 rounded text-xs ${
+                              session.meets_viewer_goal ? 'bg-green-900/50 text-green-300' : 'bg-red-900/50 text-red-300'
+                            }`}>
+                              {session.meets_viewer_goal ? '👀' : '❌'} Views
+                            </span>
+                          </div>
+                        </td>
+                        <td className="text-suspect-text py-4 px-4 font-semibold">
+                          ${session.payout_amount.toFixed(2)}
+                        </td>
+                        <td className="py-4 px-4">
+                          {session.payout_requests.length > 0 ? (
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              session.payout_requests[0].status === 'approved'
+                                ? 'bg-green-100 text-green-800'
+                                : session.payout_requests[0].status === 'denied'
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {session.payout_requests[0].status}
+                            </span>
+                          ) : session.meets_time_goal ? (
+                            <span className="text-green-400 text-sm">Eligible</span>
+                          ) : (
+                            <span className="text-red-400 text-sm">Not eligible</span>
+                          )}
+                        </td>
+                        <td className="py-4 px-4">
+                          {session.meets_time_goal && session.payout_requests.length === 0 ? (
+                            <button
+                              onClick={() => requestPayout(session.id)}
+                              className="bg-suspect-primary hover:bg-suspect-primary/80 text-white px-3 py-1 rounded text-sm"
+                            >
+                              Request Payout
+                            </button>
+                          ) : (
+                            <span className="text-suspect-gray-400 text-sm">-</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {streamSessions.length > 6 && (
+                <div className="text-center text-suspect-gray-400 text-sm mt-2">
+                  Showing {streamSessions.length} streams • Scroll to view more
+                </div>
+              )}
             </div>
           )}
         </div>

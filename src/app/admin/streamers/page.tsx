@@ -18,13 +18,32 @@ interface Streamer {
 export default function AdminStreamers() {
   const [streamers, setStreamers] = useState<Streamer[]>([])
   const [loading, setLoading] = useState(true)
+  const [lastFetch, setLastFetch] = useState<number>(0)
+
+  // Cache duration: 2 minutes
+  const CACHE_DURATION = 2 * 60 * 1000
 
   // Fetch streamers from database
   useEffect(() => {
-    fetchStreamers()
+    const now = Date.now()
+    
+    // Only fetch if cache is expired or doesn't exist
+    if (now - lastFetch > CACHE_DURATION) {
+      fetchStreamers()
+    } else {
+      setLoading(false)
+    }
   }, [])
 
-  const fetchStreamers = async () => {
+  const fetchStreamers = async (force = false) => {
+    const now = Date.now()
+    
+    // Check cache unless forced
+    if (!force && now - lastFetch < CACHE_DURATION) {
+      setLoading(false)
+      return
+    }
+
     try {
       console.log('Fetching streamers from /api/streamers...')
       const response = await fetch('/api/streamers')
@@ -34,6 +53,7 @@ export default function AdminStreamers() {
         const data = await response.json()
         console.log('Received streamers:', data)
         setStreamers(data)
+        setLastFetch(now)
       } else {
         const errorText = await response.text()
         console.error('Error fetching streamers:', response.status, errorText)
@@ -61,7 +81,7 @@ export default function AdminStreamers() {
       })
 
       if (response.ok) {
-        fetchStreamers() // Refresh the list
+        await fetchStreamers(true) // Force refresh to invalidate cache
       } else {
         alert('Error updating streamer status')
       }
@@ -70,8 +90,6 @@ export default function AdminStreamers() {
       alert('Error updating streamer status')
     }
   }
-
-
 
   return (
     <div className="min-h-screen bg-suspect-body">
@@ -143,79 +161,86 @@ export default function AdminStreamers() {
           </div>
           
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-suspect-gray-700">
-                  <th className="text-left text-suspect-gray-400 py-3">Username</th>
-                  <th className="text-left text-suspect-gray-400 py-3">TikTok</th>
-                  <th className="text-left text-suspect-gray-400 py-3">Email</th>
-                  <th className="text-left text-suspect-gray-400 py-3">Joined</th>
-                  <th className="text-left text-suspect-gray-400 py-3">Hours</th>
-                  <th className="text-left text-suspect-gray-400 py-3">Avg Viewers</th>
-                  <th className="text-left text-suspect-gray-400 py-3">Total Payout</th>
-                  <th className="text-left text-suspect-gray-400 py-3">Status</th>
-                  <th className="text-left text-suspect-gray-400 py-3">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {streamers.length === 0 && !loading ? (
-                  <tr>
-                    <td colSpan={9} className="text-center text-suspect-gray-400 py-8">
-                      No streamers found. They will appear here after registering.
-                    </td>
+            <div className="max-h-[500px] overflow-y-auto border border-suspect-gray-700 rounded-lg">
+              <table className="w-full">
+                <thead className="sticky top-0 bg-suspect-header z-10">
+                  <tr className="border-b border-suspect-gray-700">
+                    <th className="text-left text-suspect-gray-400 py-3 px-4">Username</th>
+                    <th className="text-left text-suspect-gray-400 py-3 px-4">TikTok</th>
+                    <th className="text-left text-suspect-gray-400 py-3 px-4">Email</th>
+                    <th className="text-left text-suspect-gray-400 py-3 px-4">Joined</th>
+                    <th className="text-left text-suspect-gray-400 py-3 px-4">Hours</th>
+                    <th className="text-left text-suspect-gray-400 py-3 px-4">Avg Viewers</th>
+                    <th className="text-left text-suspect-gray-400 py-3 px-4">Total Payout</th>
+                    <th className="text-left text-suspect-gray-400 py-3 px-4">Status</th>
+                    <th className="text-left text-suspect-gray-400 py-3 px-4">Actions</th>
                   </tr>
-                ) : (
-                  streamers.map((streamer) => (
-                    <tr key={streamer.id} className="border-b border-suspect-gray-800">
-                      <td className="text-suspect-text py-4 font-medium">
-                        {streamer.username}
-                      </td>
-                      <td className="text-suspect-text py-4">
-                        {streamer.tiktok_username}
-                      </td>
-                      <td className="text-suspect-gray-400 py-4">
-                        {streamer.email}
-                      </td>
-                      <td className="text-suspect-gray-400 py-4">
-                        {new Date(streamer.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="text-suspect-text py-4">
-                        {streamer.total_hours}h
-                      </td>
-                      <td className="text-suspect-text py-4">
-                        {streamer.avg_viewers.toLocaleString()}
-                      </td>
-                      <td className="text-suspect-text py-4">
-                        ${streamer.total_payout}
-                      </td>
-                      <td className="py-4">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          streamer.is_active 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {streamer.is_active ? 'Active' : 'Inactive'}
-                        </span>
-                      </td>
-                      <td className="py-4">
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => toggleStreamerStatus(streamer.id)}
-                            className={`px-3 py-1 rounded text-xs font-medium ${
-                              streamer.is_active
-                                ? 'bg-yellow-600 hover:bg-yellow-700'
-                                : 'bg-green-600 hover:bg-green-700'
-                            } text-white`}
-                          >
-                            {streamer.is_active ? 'Deactivate' : 'Activate'}
-                          </button>
-                        </div>
+                </thead>
+                <tbody>
+                  {streamers.length === 0 && !loading ? (
+                    <tr>
+                      <td colSpan={9} className="text-center text-suspect-gray-400 py-8">
+                        No streamers found. They will appear here after registering.
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    streamers.map((streamer) => (
+                      <tr key={streamer.id} className="border-b border-suspect-gray-800 hover:bg-suspect-gray-800/30 transition-colors">
+                        <td className="text-suspect-text py-4 px-4 font-medium">
+                          {streamer.username}
+                        </td>
+                        <td className="text-suspect-text py-4 px-4">
+                          {streamer.tiktok_username}
+                        </td>
+                        <td className="text-suspect-gray-400 py-4 px-4">
+                          {streamer.email}
+                        </td>
+                        <td className="text-suspect-gray-400 py-4 px-4">
+                          {new Date(streamer.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="text-suspect-text py-4 px-4">
+                          {streamer.total_hours}h
+                        </td>
+                        <td className="text-suspect-text py-4 px-4">
+                          {streamer.avg_viewers.toLocaleString()}
+                        </td>
+                        <td className="text-suspect-text py-4 px-4">
+                          ${streamer.total_payout}
+                        </td>
+                        <td className="py-4 px-4">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            streamer.is_active 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {streamer.is_active ? 'Active' : 'Inactive'}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4">
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => toggleStreamerStatus(streamer.id)}
+                              className={`px-3 py-1 rounded text-xs font-medium ${
+                                streamer.is_active
+                                  ? 'bg-yellow-600 hover:bg-yellow-700'
+                                  : 'bg-green-600 hover:bg-green-700'
+                              } text-white`}
+                            >
+                              {streamer.is_active ? 'Deactivate' : 'Activate'}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            {streamers.length > 8 && (
+              <div className="text-center text-suspect-gray-400 text-sm mt-2">
+                Showing {streamers.length} streamers • Scroll to view more
+              </div>
+            )}
           </div>
         </div>
       </div>

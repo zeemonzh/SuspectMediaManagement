@@ -55,11 +55,49 @@ export default function AdminProductKeys() {
   const [newCategoryName, setNewCategoryName] = useState('')
   const [newCategoryDescription, setNewCategoryDescription] = useState('')
 
+  // Smart cache to avoid refetching data when switching tabs
+  const [dataCache, setDataCache] = useState<{
+    keys?: boolean
+    requests?: boolean
+    categories?: boolean
+  }>({})
+
   useEffect(() => {
-    fetchProductKeys()
-    fetchKeyRequests()
-    fetchProductCategories()
-  }, [])
+    fetchData()
+  }, [activeTab])
+
+  const fetchData = async () => {
+    // Key requests should always be fresh since they change frequently
+    // Other tabs can use cache safely
+    if (dataCache[activeTab] && activeTab !== 'requests') {
+      setLoading(false)
+      return
+    }
+
+    setLoading(true)
+    try {
+      switch (activeTab) {
+        case 'keys':
+          await fetchProductKeys()
+          break
+        case 'requests':
+          await fetchKeyRequests()
+          break
+        case 'categories':
+          await fetchProductCategories()
+          break
+      }
+      
+      // Mark this tab's data as cached (except requests which are always fresh)
+      if (activeTab !== 'requests') {
+        setDataCache(prev => ({ ...prev, [activeTab]: true }))
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const fetchProductCategories = async () => {
     try {
@@ -82,8 +120,6 @@ export default function AdminProductKeys() {
       }
     } catch (error) {
       console.error('Error fetching product keys:', error)
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -135,6 +171,8 @@ export default function AdminProductKeys() {
 
       if (response.ok) {
         await fetchProductKeys() // Refresh the list
+        // Invalidate cache for keys tab
+        setDataCache(prev => ({ ...prev, keys: false }))
         setShowAddKeyModal(false)
         setNewKeyValue('')
         setSelectedCategoryId('')
@@ -169,6 +207,8 @@ export default function AdminProductKeys() {
 
       if (response.ok) {
         await fetchProductCategories() // Refresh the list
+        // Invalidate cache for categories tab
+        setDataCache(prev => ({ ...prev, categories: false }))
         setShowAddCategoryModal(false)
         setNewCategoryName('')
         setNewCategoryDescription('')
@@ -201,6 +241,8 @@ export default function AdminProductKeys() {
 
       if (response.ok) {
         await fetchProductCategories() // Refresh the list
+        // Invalidate cache for categories and keys tabs
+        setDataCache(prev => ({ ...prev, categories: false, keys: false }))
         alert('Category deleted successfully!')
       } else {
         const error = await response.json()
@@ -231,6 +273,8 @@ export default function AdminProductKeys() {
       if (response.ok) {
         await fetchProductKeys() // Refresh the list
         await fetchProductCategories() // Refresh categories to update key counts
+        // Invalidate cache for both keys and categories tabs
+        setDataCache(prev => ({ ...prev, keys: false, categories: false }))
         alert('Key deleted successfully!')
       } else {
         const error = await response.json()
@@ -265,6 +309,8 @@ export default function AdminProductKeys() {
 
         // Refresh the product keys to show any new assignments
         await fetchProductKeys()
+        // Invalidate cache for keys tab since assignments changed
+        setDataCache(prev => ({ ...prev, keys: false }))
         
         alert(`Request ${status} successfully`)
       } else {
@@ -434,211 +480,232 @@ export default function AdminProductKeys() {
               <div>
                 <h2 className="text-xl font-semibold text-suspect-text mb-4">Key Requests</h2>
                 <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-suspect-gray-700">
-                        <th className="text-left text-suspect-gray-400 py-3">Streamer</th>
-                        <th className="text-left text-suspect-gray-400 py-3">Product Name</th>
-                        <th className="text-left text-suspect-gray-400 py-3">Status</th>
-                        <th className="text-left text-suspect-gray-400 py-3">Date</th>
-                        <th className="text-left text-suspect-gray-400 py-3">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {keyRequests.map((request) => {
-                        const keyInfo = getCategoryKeyInfo(request.category_name)
-                        const canApprove = keyInfo.availableKeys > 0
-                        
-                        return (
-                          <tr key={request.id} className="border-b border-suspect-gray-800">
-                            <td className="text-suspect-text py-4 font-medium">
-                              {request.streamer_username}
-                            </td>
-                            <td className="text-suspect-text py-4 max-w-xs">
-                              <div>
-                                <div>{request.reason}</div>
-                                {keyInfo.hasMatchingCategory && request.status === 'pending' && (
-                                  <div className="text-xs text-suspect-gray-400 mt-1">
-                                    {keyInfo.categoryKeys > 0 ? (
-                                      <span className="text-green-400">
-                                        {keyInfo.categoryKeys} available in {keyInfo.categoryName}
-                                      </span>
-                                    ) : keyInfo.availableKeys > 0 ? (
-                                      <span className="text-yellow-400">
-                                        No {keyInfo.categoryName} keys, {keyInfo.availableKeys} other keys available
-                                      </span>
-                                    ) : (
-                                      <span className="text-red-400">
-                                        No keys available
-                                      </span>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            </td>
-                            <td className="py-4">
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                request.status === 'approved'
-                                  ? 'bg-green-100 text-green-800'
-                                  : request.status === 'denied'
-                                  ? 'bg-red-100 text-red-800'
-                                  : 'bg-yellow-100 text-yellow-800'
-                              }`}>
-                                {request.status}
-                              </span>
-                            </td>
-                            <td className="text-suspect-gray-400 py-4">
-                              {new Date(request.created_at).toLocaleDateString()}
-                            </td>
-                            <td className="py-4">
-                              {request.status === 'pending' ? (
-                                <div className="flex space-x-2">
-                                  <button
-                                    onClick={() => {
-                                      if (!canApprove) {
-                                        alert(`Cannot approve: No available keys in the system. Please add more keys before approving requests.`)
-                                        return
-                                      }
-                                      handleRequestAction(request.id, 'approved', 'Request approved')
-                                    }}
-                                    className={`text-sm ${
-                                      canApprove 
-                                        ? 'text-green-400 hover:text-green-300'
-                                        : 'text-gray-500 cursor-not-allowed'
-                                    }`}
-                                    disabled={!canApprove}
-                                    title={canApprove ? 'Approve request' : 'No available keys'}
-                                  >
-                                    Approve {!canApprove && '⚠️'}
-                                  </button>
-                                  <button
-                                    onClick={() => handleRequestAction(request.id, 'denied', 'Request denied')}
-                                    className="text-red-400 hover:text-red-300 text-sm"
-                                  >
-                                    Deny
-                                  </button>
+                  <div className="max-h-96 overflow-y-auto border border-suspect-gray-700 rounded-lg">
+                    <table className="w-full">
+                      <thead className="sticky top-0 bg-suspect-header z-10">
+                        <tr className="border-b border-suspect-gray-700">
+                          <th className="text-left text-suspect-gray-400 py-3 px-4">Streamer</th>
+                          <th className="text-left text-suspect-gray-400 py-3 px-4">Product Name</th>
+                          <th className="text-left text-suspect-gray-400 py-3 px-4">Status</th>
+                          <th className="text-left text-suspect-gray-400 py-3 px-4">Date</th>
+                          <th className="text-left text-suspect-gray-400 py-3 px-4">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {keyRequests.map((request) => {
+                          const keyInfo = getCategoryKeyInfo(request.category_name)
+                          const canApprove = keyInfo.availableKeys > 0
+                          
+                          return (
+                            <tr key={request.id} className="border-b border-suspect-gray-800 hover:bg-suspect-gray-800/30 transition-colors">
+                              <td className="text-suspect-text py-4 px-4 font-medium">
+                                {request.streamer_username}
+                              </td>
+                              <td className="text-suspect-text py-4 px-4 max-w-xs">
+                                <div>
+                                  <div>{request.reason}</div>
+                                  {keyInfo.hasMatchingCategory && request.status === 'pending' && (
+                                    <div className="text-xs text-suspect-gray-400 mt-1">
+                                      {keyInfo.categoryKeys > 0 ? (
+                                        <span className="text-green-400">
+                                          {keyInfo.categoryKeys} available in {keyInfo.categoryName}
+                                        </span>
+                                      ) : keyInfo.availableKeys > 0 ? (
+                                        <span className="text-yellow-400">
+                                          No {keyInfo.categoryName} keys, {keyInfo.availableKeys} other keys available
+                                        </span>
+                                      ) : (
+                                        <span className="text-red-400">
+                                          No keys available
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
-                              ) : (
-                                <span className="text-suspect-gray-400 text-sm">
-                                  {request.admin_response}
+                              </td>
+                              <td className="py-4 px-4">
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                  request.status === 'approved'
+                                    ? 'bg-green-100 text-green-800'
+                                    : request.status === 'denied'
+                                    ? 'bg-red-100 text-red-800'
+                                    : 'bg-yellow-100 text-yellow-800'
+                                }`}>
+                                  {request.status}
                                 </span>
-                              )}
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
+                              </td>
+                              <td className="text-suspect-gray-400 py-4 px-4">
+                                {new Date(request.created_at).toLocaleDateString()}
+                              </td>
+                              <td className="py-4 px-4">
+                                {request.status === 'pending' ? (
+                                  <div className="flex space-x-2">
+                                    <button
+                                      onClick={() => {
+                                        if (!canApprove) {
+                                          alert(`Cannot approve: No available keys in the system. Please add more keys before approving requests.`)
+                                          return
+                                        }
+                                        handleRequestAction(request.id, 'approved', 'Request approved')
+                                      }}
+                                      className={`text-sm ${
+                                        canApprove 
+                                          ? 'text-green-400 hover:text-green-300'
+                                          : 'text-gray-500 cursor-not-allowed'
+                                      }`}
+                                      disabled={!canApprove}
+                                      title={canApprove ? 'Approve request' : 'No available keys'}
+                                    >
+                                      Approve {!canApprove && '⚠️'}
+                                    </button>
+                                    <button
+                                      onClick={() => handleRequestAction(request.id, 'denied', 'Request denied')}
+                                      className="text-red-400 hover:text-red-300 text-sm"
+                                    >
+                                      Deny
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <span className="text-suspect-gray-400 text-sm">
+                                    {request.admin_response}
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  {keyRequests.length > 5 && (
+                    <div className="text-center text-suspect-gray-400 text-sm mt-2">
+                      Showing {keyRequests.length} requests • Scroll to view more
+                    </div>
+                  )}
                 </div>
               </div>
             ) : activeTab === 'keys' ? (
               <div>
                 <h2 className="text-xl font-semibold text-suspect-text mb-4">All Product Keys</h2>
                 <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-suspect-gray-700">
-                        <th className="text-left text-suspect-gray-400 py-3">Key</th>
-                        <th className="text-left text-suspect-gray-400 py-3">Product</th>
-                        <th className="text-left text-suspect-gray-400 py-3">Status</th>
-                        <th className="text-left text-suspect-gray-400 py-3">Assigned To</th>
-                        <th className="text-left text-suspect-gray-400 py-3">Assigned Date</th>
-                        <th className="text-left text-suspect-gray-400 py-3">Created</th>
-                        <th className="text-left text-suspect-gray-400 py-3">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {productKeys.map((key) => (
-                        <tr key={key.id} className="border-b border-suspect-gray-800">
-                          <td className="text-suspect-text py-4 font-mono">
-                            {key.key}
-                          </td>
-                          <td className="text-suspect-text py-4">
-                            {key.product_categories?.name || key.product_name || 'Unknown'}
-                          </td>
-                          <td className="py-4">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              key.is_assigned
-                                ? 'bg-blue-100 text-blue-800'
-                                : 'bg-green-100 text-green-800'
-                            }`}>
-                              {key.is_assigned ? 'Assigned' : 'Available'}
-                            </span>
-                          </td>
-                          <td className="text-suspect-text py-4">
-                            {key.streamers?.username || '-'}
-                          </td>
-                          <td className="text-suspect-gray-400 py-4">
-                            {key.assigned_at ? new Date(key.assigned_at).toLocaleDateString() : '-'}
-                          </td>
-                          <td className="text-suspect-gray-400 py-4">
-                            {new Date(key.created_at).toLocaleDateString()}
-                          </td>
-                          <td className="py-4">
-                            <button
-                              onClick={() => deleteKey(key.id, key.key)}
-                              className="text-red-400 hover:text-red-300 text-sm"
-                            >
-                              Delete
-                            </button>
-                          </td>
+                  <div className="max-h-96 overflow-y-auto border border-suspect-gray-700 rounded-lg">
+                    <table className="w-full">
+                      <thead className="sticky top-0 bg-suspect-header z-10">
+                        <tr className="border-b border-suspect-gray-700">
+                          <th className="text-left text-suspect-gray-400 py-3 px-4">Key</th>
+                          <th className="text-left text-suspect-gray-400 py-3 px-4">Product</th>
+                          <th className="text-left text-suspect-gray-400 py-3 px-4">Status</th>
+                          <th className="text-left text-suspect-gray-400 py-3 px-4">Assigned To</th>
+                          <th className="text-left text-suspect-gray-400 py-3 px-4">Assigned Date</th>
+                          <th className="text-left text-suspect-gray-400 py-3 px-4">Created</th>
+                          <th className="text-left text-suspect-gray-400 py-3 px-4">Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {productKeys.map((key) => (
+                          <tr key={key.id} className="border-b border-suspect-gray-800 hover:bg-suspect-gray-800/30 transition-colors">
+                            <td className="text-suspect-text py-4 px-4 font-mono">
+                              {key.key}
+                            </td>
+                            <td className="text-suspect-text py-4 px-4">
+                              {key.product_categories?.name || key.product_name || 'Unknown'}
+                            </td>
+                            <td className="py-4 px-4">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                key.is_assigned
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : 'bg-green-100 text-green-800'
+                              }`}>
+                                {key.is_assigned ? 'Assigned' : 'Available'}
+                              </span>
+                            </td>
+                            <td className="text-suspect-text py-4 px-4">
+                              {key.streamers?.username || '-'}
+                            </td>
+                            <td className="text-suspect-gray-400 py-4 px-4">
+                              {key.assigned_at ? new Date(key.assigned_at).toLocaleDateString() : '-'}
+                            </td>
+                            <td className="text-suspect-gray-400 py-4 px-4">
+                              {new Date(key.created_at).toLocaleDateString()}
+                            </td>
+                            <td className="py-4 px-4">
+                              <button
+                                onClick={() => deleteKey(key.id, key.key)}
+                                className="text-red-400 hover:text-red-300 text-sm"
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {productKeys.length > 6 && (
+                    <div className="text-center text-suspect-gray-400 text-sm mt-2">
+                      Showing {productKeys.length} keys • Scroll to view more
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
               <div>
                 <h2 className="text-xl font-semibold text-suspect-text mb-4">Product Categories</h2>
                 <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-suspect-gray-700">
-                        <th className="text-left text-suspect-gray-400 py-3">Category Name</th>
-                        <th className="text-left text-suspect-gray-400 py-3">Description</th>
-                        <th className="text-left text-suspect-gray-400 py-3">Keys Count</th>
-                        <th className="text-left text-suspect-gray-400 py-3">Created</th>
-                        <th className="text-left text-suspect-gray-400 py-3">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {productCategories.map((category) => {
-                        const keyCount = productKeys.filter(key => key.category_id === category.id).length
-                        const hasKeys = keyCount > 0
-                        return (
-                          <tr key={category.id} className="border-b border-suspect-gray-800">
-                            <td className="text-suspect-text py-4 font-medium">
-                              {category.name}
-                            </td>
-                            <td className="text-suspect-text py-4 max-w-xs">
-                              {category.description || '-'}
-                            </td>
-                            <td className="text-suspect-text py-4">
-                              {keyCount} keys
-                            </td>
-                            <td className="text-suspect-gray-400 py-4">
-                              {new Date(category.created_at).toLocaleDateString()}
-                            </td>
-                            <td className="py-4">
-                              {hasKeys ? (
-                                <span className="text-suspect-gray-400 text-sm" title="Cannot delete category with assigned keys">
-                                  Cannot delete
-                                </span>
-                              ) : (
-                                <button
-                                  onClick={() => deleteCategory(category.id, category.name)}
-                                  className="text-red-400 hover:text-red-300 text-sm"
-                                >
-                                  Delete
-                                </button>
-                              )}
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
+                  <div className="max-h-80 overflow-y-auto border border-suspect-gray-700 rounded-lg">
+                    <table className="w-full">
+                      <thead className="sticky top-0 bg-suspect-header z-10">
+                        <tr className="border-b border-suspect-gray-700">
+                          <th className="text-left text-suspect-gray-400 py-3 px-4">Category Name</th>
+                          <th className="text-left text-suspect-gray-400 py-3 px-4">Description</th>
+                          <th className="text-left text-suspect-gray-400 py-3 px-4">Keys Count</th>
+                          <th className="text-left text-suspect-gray-400 py-3 px-4">Created</th>
+                          <th className="text-left text-suspect-gray-400 py-3 px-4">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {productCategories.map((category) => {
+                          const keyCount = productKeys.filter(key => key.category_id === category.id).length
+                          const hasKeys = keyCount > 0
+                          return (
+                            <tr key={category.id} className="border-b border-suspect-gray-800 hover:bg-suspect-gray-800/30 transition-colors">
+                              <td className="text-suspect-text py-4 px-4 font-medium">
+                                {category.name}
+                              </td>
+                              <td className="text-suspect-text py-4 px-4 max-w-xs">
+                                {category.description || '-'}
+                              </td>
+                              <td className="text-suspect-text py-4 px-4">
+                                {keyCount} keys
+                              </td>
+                              <td className="text-suspect-gray-400 py-4 px-4">
+                                {new Date(category.created_at).toLocaleDateString()}
+                              </td>
+                              <td className="py-4 px-4">
+                                {hasKeys ? (
+                                  <span className="text-suspect-gray-400 text-sm" title="Cannot delete category with assigned keys">
+                                    Cannot delete
+                                  </span>
+                                ) : (
+                                  <button
+                                    onClick={() => deleteCategory(category.id, category.name)}
+                                    className="text-red-400 hover:text-red-300 text-sm"
+                                  >
+                                    Delete
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  {productCategories.length > 4 && (
+                    <div className="text-center text-suspect-gray-400 text-sm mt-2">
+                      Showing {productCategories.length} categories • Scroll to view more
+                    </div>
+                  )}
                 </div>
               </div>
             )}

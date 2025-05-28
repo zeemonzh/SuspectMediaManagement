@@ -92,57 +92,59 @@ function StreamerGoalsTable({ allStreamers }: { allStreamers: Streamer[] }) {
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead>
-          <tr className="border-b border-suspect-gray-700">
-            <th className="text-left text-suspect-gray-400 py-3">Streamer</th>
-            <th className="text-left text-suspect-gray-400 py-3">Settings Type</th>
-            <th className="text-left text-suspect-gray-400 py-3">Min Duration</th>
-            <th className="text-left text-suspect-gray-400 py-3">Target Viewers</th>
-            <th className="text-left text-suspect-gray-400 py-3">Base Payout</th>
-            <th className="text-left text-suspect-gray-400 py-3">Partial Payout</th>
-          </tr>
-        </thead>
-        <tbody>
-          {allStreamers.map((streamer) => {
-            const customGoals = streamerGoals.find(g => g.streamer_id === streamer.id)
-            const isCustom = !!customGoals
-            const goals = isCustom ? customGoals : systemDefaults
+      <div className="max-h-96 overflow-y-auto border border-suspect-gray-700 rounded-lg">
+        <table className="w-full">
+          <thead className="sticky top-0 bg-suspect-header z-10">
+            <tr className="border-b border-suspect-gray-700">
+              <th className="text-left text-suspect-gray-400 py-3 px-4">Streamer</th>
+              <th className="text-left text-suspect-gray-400 py-3 px-4">Settings Type</th>
+              <th className="text-left text-suspect-gray-400 py-3 px-4">Min Duration</th>
+              <th className="text-left text-suspect-gray-400 py-3 px-4">Target Viewers</th>
+              <th className="text-left text-suspect-gray-400 py-3 px-4">Base Payout</th>
+              <th className="text-left text-suspect-gray-400 py-3 px-4">Partial Payout</th>
+            </tr>
+          </thead>
+          <tbody>
+            {allStreamers.map((streamer) => {
+              const customGoals = streamerGoals.find(g => g.streamer_id === streamer.id)
+              const isCustom = !!customGoals
+              const goals = isCustom ? customGoals : systemDefaults
 
-            return (
-              <tr key={streamer.id} className="border-b border-suspect-gray-800">
-                <td className="text-suspect-text py-4 font-medium">
-                  <div>
-                    <div>{streamer.username}</div>
-                    <div className="text-sm text-suspect-gray-400">{streamer.tiktok_username}</div>
-                  </div>
-                </td>
-                <td className="py-4">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    isCustom 
-                      ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
-                      : 'bg-suspect-gray-700 text-suspect-gray-300 border border-suspect-gray-600'
-                  }`}>
-                    {isCustom ? 'Custom' : 'System Default'}
-                  </span>
-                </td>
-                <td className="text-suspect-text py-4">
-                  {goals?.minimum_duration_minutes || systemDefaults?.minimum_duration_minutes || 60} min
-                </td>
-                <td className="text-suspect-text py-4">
-                  {(goals?.target_viewers || systemDefaults?.target_viewers || 1000).toLocaleString()}
-                </td>
-                <td className="text-suspect-text py-4">
-                  ${(goals?.base_payout || systemDefaults?.base_payout || 7.20).toFixed(2)}
-                </td>
-                <td className="text-suspect-text py-4">
-                  ${(goals?.partial_payout || systemDefaults?.partial_payout || 4.50).toFixed(2)}
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
+              return (
+                <tr key={streamer.id} className="border-b border-suspect-gray-800 hover:bg-suspect-gray-800/30 transition-colors">
+                  <td className="text-suspect-text py-4 px-4 font-medium">
+                    <div>
+                      <div>{streamer.username}</div>
+                      <div className="text-sm text-suspect-gray-400">{streamer.tiktok_username}</div>
+                    </div>
+                  </td>
+                  <td className="py-4 px-4">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      isCustom 
+                        ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
+                        : 'bg-suspect-gray-700 text-suspect-gray-300 border border-suspect-gray-600'
+                    }`}>
+                      {isCustom ? 'Custom' : 'System Default'}
+                    </span>
+                  </td>
+                  <td className="text-suspect-text py-4 px-4">
+                    {goals?.minimum_duration_minutes || systemDefaults?.minimum_duration_minutes || 60} min
+                  </td>
+                  <td className="text-suspect-text py-4 px-4">
+                    {(goals?.target_viewers || systemDefaults?.target_viewers || 1000).toLocaleString()}
+                  </td>
+                  <td className="text-suspect-text py-4 px-4">
+                    ${(goals?.base_payout || systemDefaults?.base_payout || 7.20).toFixed(2)}
+                  </td>
+                  <td className="text-suspect-text py-4 px-4">
+                    ${(goals?.partial_payout || systemDefaults?.partial_payout || 4.50).toFixed(2)}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
 
       {/* Summary */}
       <div className="mt-4 flex justify-between items-center text-sm">
@@ -160,6 +162,12 @@ function StreamerGoalsTable({ allStreamers }: { allStreamers: Streamer[] }) {
           </div>
         </div>
       </div>
+      
+      {allStreamers.length > 8 && (
+        <div className="text-center text-suspect-gray-400 text-sm mt-2">
+          Showing {allStreamers.length} streamers • Scroll to view more
+        </div>
+      )}
     </div>
   )
 }
@@ -179,9 +187,20 @@ export default function AdminAnalytics() {
     partial_payout: 4.50
   })
   const [showGoalsOverview, setShowGoalsOverview] = useState(false)
+  const [lastAnalyticsFetch, setLastAnalyticsFetch] = useState<number>(0)
+  const [lastStreamersFetch, setLastStreamersFetch] = useState<number>(0)
+
+  // Cache durations
+  const ANALYTICS_CACHE_DURATION = 5 * 60 * 1000 // 5 minutes for analytics
+  const STREAMERS_CACHE_DURATION = 10 * 60 * 1000 // 10 minutes for streamers list
 
   useEffect(() => {
-    fetchStreamers()
+    const now = Date.now()
+    
+    // Only fetch streamers if cache is expired
+    if (now - lastStreamersFetch > STREAMERS_CACHE_DURATION) {
+      fetchStreamers()
+    }
   }, [])
 
   useEffect(() => {
@@ -189,6 +208,13 @@ export default function AdminAnalytics() {
   }, [timeframe])
 
   const fetchAnalyticsData = async () => {
+    const now = Date.now()
+    
+    // Use cache if available and not expired
+    if (now - lastAnalyticsFetch < ANALYTICS_CACHE_DURATION && streamers.length > 0) {
+      return
+    }
+
     setLoading(true)
     try {
       const response = await fetch(`/api/analytics?timeframe=${timeframe}`)
@@ -196,6 +222,7 @@ export default function AdminAnalytics() {
         const data = await response.json()
         setStreamers(data.streamers || [])
         setMetrics(data.metrics)
+        setLastAnalyticsFetch(now)
       } else {
         console.error('Failed to fetch analytics data')
         setStreamers([])
@@ -211,11 +238,19 @@ export default function AdminAnalytics() {
   }
 
   const fetchStreamers = async () => {
+    const now = Date.now()
+    
+    // Use cache if available and not expired
+    if (now - lastStreamersFetch < STREAMERS_CACHE_DURATION && allStreamers.length > 0) {
+      return
+    }
+
     try {
       const response = await fetch('/api/streamers')
       if (response.ok) {
         const data = await response.json()
         setAllStreamers(data)
+        setLastStreamersFetch(now)
       }
     } catch (error) {
       console.error('Error fetching streamers:', error)
@@ -547,65 +582,72 @@ export default function AdminAnalytics() {
         <div className="card p-6">
           <h2 className="text-xl font-semibold text-suspect-text mb-4">Detailed Analytics</h2>
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-suspect-gray-700">
-                  <th className="text-left text-suspect-gray-400 py-3">Streamer</th>
-                  <th className="text-left text-suspect-gray-400 py-3">Hours</th>
-                  <th className="text-left text-suspect-gray-400 py-3">Avg Viewers</th>
-                  <th className="text-left text-suspect-gray-400 py-3">Streams</th>
-                  <th className="text-left text-suspect-gray-400 py-3">Goal Progress</th>
-                  <th className="text-left text-suspect-gray-400 py-3">Growth</th>
-                  <th className="text-left text-suspect-gray-400 py-3">Last Stream</th>
-                </tr>
-              </thead>
-              <tbody>
-                {streamers.map((streamer) => (
-                  <tr key={streamer.id} className="border-b border-suspect-gray-800">
-                    <td className="text-suspect-text py-4 font-medium">
-                      {streamer.username}
-                    </td>
-                    <td className="text-suspect-text py-4">
-                      {streamer.totalHours}h
-                    </td>
-                    <td className="text-suspect-text py-4">
-                      {streamer.avgViewers.toLocaleString()}
-                    </td>
-                    <td className="text-suspect-text py-4">
-                      {streamer.totalStreams}
-                    </td>
-                    <td className="py-4">
-                      <div className="flex flex-col space-y-1">
-                        <div className="flex items-center">
-                          <div className="w-20 bg-suspect-gray-700 rounded-full h-2 mr-2">
-                            <div 
-                              className="bg-suspect-primary h-2 rounded-full"
-                              style={{ width: `${Math.min(streamer.goalCompletion, 100)}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-suspect-text text-sm font-medium">
-                            {streamer.goalDetails.fullGoalsMet}/{streamer.goalDetails.total}
-                          </span>
-                        </div>
-                        <div className="text-xs text-suspect-gray-400">
-                          {streamer.goalDetails.timeGoalsMet} time • {streamer.goalDetails.viewerGoalsMet} viewers
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-4">
-                      <span className={`text-sm font-medium ${
-                        streamer.growthRate > 0 ? 'text-green-400' : 'text-red-400'
-                      }`}>
-                        {streamer.growthRate > 0 ? '+' : ''}{streamer.growthRate.toFixed(1)}%
-                      </span>
-                    </td>
-                    <td className="text-suspect-gray-400 py-4">
-                      {new Date(streamer.lastStream).toLocaleDateString()}
-                    </td>
+            <div className="max-h-[600px] overflow-y-auto border border-suspect-gray-700 rounded-lg">
+              <table className="w-full">
+                <thead className="sticky top-0 bg-suspect-header z-10">
+                  <tr className="border-b border-suspect-gray-700">
+                    <th className="text-left text-suspect-gray-400 py-3 px-4">Streamer</th>
+                    <th className="text-left text-suspect-gray-400 py-3 px-4">Hours</th>
+                    <th className="text-left text-suspect-gray-400 py-3 px-4">Avg Viewers</th>
+                    <th className="text-left text-suspect-gray-400 py-3 px-4">Streams</th>
+                    <th className="text-left text-suspect-gray-400 py-3 px-4">Goal Progress</th>
+                    <th className="text-left text-suspect-gray-400 py-3 px-4">Growth</th>
+                    <th className="text-left text-suspect-gray-400 py-3 px-4">Last Stream</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {streamers.map((streamer) => (
+                    <tr key={streamer.id} className="border-b border-suspect-gray-800 hover:bg-suspect-gray-800/30 transition-colors">
+                      <td className="text-suspect-text py-4 px-4 font-medium">
+                        {streamer.username}
+                      </td>
+                      <td className="text-suspect-text py-4 px-4">
+                        {streamer.totalHours}h
+                      </td>
+                      <td className="text-suspect-text py-4 px-4">
+                        {streamer.avgViewers.toLocaleString()}
+                      </td>
+                      <td className="text-suspect-text py-4 px-4">
+                        {streamer.totalStreams}
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="flex flex-col space-y-1">
+                          <div className="flex items-center">
+                            <div className="w-20 bg-suspect-gray-700 rounded-full h-2 mr-2">
+                              <div 
+                                className="bg-suspect-primary h-2 rounded-full"
+                                style={{ width: `${Math.min(streamer.goalCompletion, 100)}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-suspect-text text-sm font-medium">
+                              {streamer.goalDetails.fullGoalsMet}/{streamer.goalDetails.total}
+                            </span>
+                          </div>
+                          <div className="text-xs text-suspect-gray-400">
+                            {streamer.goalDetails.timeGoalsMet} time • {streamer.goalDetails.viewerGoalsMet} viewers
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className={`text-sm font-medium ${
+                          streamer.growthRate > 0 ? 'text-green-400' : 'text-red-400'
+                        }`}>
+                          {streamer.growthRate > 0 ? '+' : ''}{streamer.growthRate.toFixed(1)}%
+                        </span>
+                      </td>
+                      <td className="text-suspect-gray-400 py-4 px-4">
+                        {new Date(streamer.lastStream).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {streamers.length > 10 && (
+              <div className="text-center text-suspect-gray-400 text-sm mt-2">
+                Showing {streamers.length} streamers • Scroll to view more
+              </div>
+            )}
           </div>
         </div>
 

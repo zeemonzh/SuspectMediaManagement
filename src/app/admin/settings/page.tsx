@@ -56,6 +56,14 @@ export default function AdminSettings() {
   const [showCreateKeyModal, setShowCreateKeyModal] = useState(false)
   const [newKeyCount, setNewKeyCount] = useState(1)
 
+  // Simple cache to avoid refetching data when switching tabs
+  const [dataCache, setDataCache] = useState<{
+    invitations?: boolean
+    users?: boolean
+    system?: boolean
+    logs?: boolean
+  }>({})
+
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
       router.push('/login')
@@ -69,16 +77,34 @@ export default function AdminSettings() {
   }, [isAdmin, activeTab])
 
   const fetchData = async () => {
+    // Activity logs should always be fresh since they change frequently
+    // Other tabs can use cache safely
+    if (dataCache[activeTab] && activeTab !== 'logs') {
+      setLoading(false)
+      return
+    }
+
     setLoading(true)
     try {
-      if (activeTab === 'invitations') {
-        await fetchInvitationKeys()
-      } else if (activeTab === 'users') {
-        await fetchStreamers()
-      } else if (activeTab === 'system') {
-        await fetchSecuritySettings()
-      } else if (activeTab === 'logs') {
-        await fetchActivityLogs()
+      // Only fetch data for the active tab to improve performance
+      switch (activeTab) {
+        case 'invitations':
+          await fetchInvitationKeys()
+          break
+        case 'users':
+          await fetchStreamers()
+          break
+        case 'system':
+          await fetchSecuritySettings()
+          break
+        case 'logs':
+          await fetchActivityLogs()
+          break
+      }
+      
+      // Mark this tab's data as cached (except logs which are always fresh)
+      if (activeTab !== 'logs') {
+        setDataCache(prev => ({ ...prev, [activeTab]: true }))
       }
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -159,6 +185,8 @@ export default function AdminSettings() {
         setShowCreateKeyModal(false)
         setNewKeyCount(1)
         await fetchInvitationKeys()
+        // Invalidate cache for invitations tab
+        setDataCache(prev => ({ ...prev, invitations: false }))
         alert(`${newKeyCount} invitation key(s) generated successfully!`)
       } else {
         alert('Error generating invitation keys')
@@ -186,6 +214,8 @@ export default function AdminSettings() {
       if (response.ok) {
         const result = await response.json()
         await fetchInvitationKeys()
+        // Invalidate cache
+        setDataCache(prev => ({ ...prev, invitations: false, users: false }))
         alert(result.message || 'Invitation key deleted successfully!')
       } else {
         alert('Error deleting invitation key')
@@ -208,6 +238,8 @@ export default function AdminSettings() {
 
       if (response.ok) {
         await fetchStreamers() // Refresh the list
+        // Invalidate cache
+        setDataCache(prev => ({ ...prev, users: false, logs: false }))
         alert(`User "${username}" has been deleted successfully.`)
       } else {
         alert('Error deleting user')
@@ -401,67 +433,74 @@ export default function AdminSettings() {
 
             <div className="card p-6">
               <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-suspect-gray-700">
-                      <th className="text-left text-suspect-gray-400 py-3">Invitation Code</th>
-                      <th className="text-left text-suspect-gray-400 py-3">Status</th>
-                      <th className="text-left text-suspect-gray-400 py-3">Created</th>
-                      <th className="text-left text-suspect-gray-400 py-3">Used By</th>
-                      <th className="text-left text-suspect-gray-400 py-3">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {invitationKeys.map((key) => (
-                      <tr key={key.id} className="border-b border-suspect-gray-800">
-                        <td className="text-suspect-text py-4 font-mono">
-                          <div className="flex items-center space-x-2">
-                            <span>{key.code}</span>
-                            <button
-                              onClick={() => copyToClipboard(key.code)}
-                              className="text-suspect-gray-400 hover:text-suspect-text"
-                              title="Copy to clipboard"
-                            >
-                              📋
-                            </button>
-                          </div>
-                        </td>
-                        <td className="py-4">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            key.used_at 
-                              ? 'bg-blue-500/20 text-blue-400' 
-                              : 'bg-green-500/20 text-green-400'
-                          }`}>
-                            {key.used_at ? 'Used' : 'Active'}
-                          </span>
-                        </td>
-                        <td className="text-suspect-gray-400 py-4">
-                          {new Date(key.created_at).toLocaleDateString()}
-                        </td>
-                        <td className="text-suspect-text py-4">
-                          {key.used_by || '-'}
-                        </td>
-                        <td className="py-4">
-                          {!key.used_at && (
-                            <button
-                              onClick={() => deleteKey(key.id, key.code, key.used_by)}
-                              className="text-red-400 hover:text-red-300 text-sm"
-                            >
-                              Delete
-                            </button>
-                          )}
-                        </td>
+                <div className="max-h-80 overflow-y-auto border border-suspect-gray-700 rounded-lg">
+                  <table className="w-full">
+                    <thead className="sticky top-0 bg-suspect-header z-10">
+                      <tr className="border-b border-suspect-gray-700">
+                        <th className="text-left text-suspect-gray-400 py-3 px-4">Invitation Code</th>
+                        <th className="text-left text-suspect-gray-400 py-3 px-4">Status</th>
+                        <th className="text-left text-suspect-gray-400 py-3 px-4">Created</th>
+                        <th className="text-left text-suspect-gray-400 py-3 px-4">Used By</th>
+                        <th className="text-left text-suspect-gray-400 py-3 px-4">Actions</th>
                       </tr>
-                    ))}
-                    {invitationKeys.length === 0 && (
-                      <tr>
-                        <td colSpan={5} className="text-center text-suspect-gray-400 py-8">
-                          No invitation keys found. Generate some to get started.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {invitationKeys.map((key) => (
+                        <tr key={key.id} className="border-b border-suspect-gray-800 hover:bg-suspect-gray-800/30 transition-colors">
+                          <td className="text-suspect-text py-4 px-4 font-mono">
+                            <div className="flex items-center space-x-2">
+                              <span>{key.code}</span>
+                              <button
+                                onClick={() => copyToClipboard(key.code)}
+                                className="text-suspect-gray-400 hover:text-suspect-text"
+                                title="Copy to clipboard"
+                              >
+                                📋
+                              </button>
+                            </div>
+                          </td>
+                          <td className="py-4 px-4">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              key.used_at 
+                                ? 'bg-blue-500/20 text-blue-400' 
+                                : 'bg-green-500/20 text-green-400'
+                            }`}>
+                              {key.used_at ? 'Used' : 'Active'}
+                            </span>
+                          </td>
+                          <td className="text-suspect-gray-400 py-4 px-4">
+                            {new Date(key.created_at).toLocaleDateString()}
+                          </td>
+                          <td className="text-suspect-text py-4 px-4">
+                            {key.used_by || '-'}
+                          </td>
+                          <td className="py-4 px-4">
+                            {!key.used_at && (
+                              <button
+                                onClick={() => deleteKey(key.id, key.code, key.used_by)}
+                                className="text-red-400 hover:text-red-300 text-sm"
+                              >
+                                Delete
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                      {invitationKeys.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="text-center text-suspect-gray-400 py-8">
+                            No invitation keys found. Generate some to get started.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                {invitationKeys.length > 5 && (
+                  <div className="text-center text-suspect-gray-400 text-sm mt-2">
+                    Showing {invitationKeys.length} keys • Scroll to view more
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -479,65 +518,72 @@ export default function AdminSettings() {
 
             <div className="card p-6">
               <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-suspect-gray-700">
-                      <th className="text-left text-suspect-gray-400 py-3">Username</th>
-                      <th className="text-left text-suspect-gray-400 py-3">Role</th>
-                      <th className="text-left text-suspect-gray-400 py-3">Email</th>
-                      <th className="text-left text-suspect-gray-400 py-3">TikTok</th>
-                      <th className="text-left text-suspect-gray-400 py-3">Status</th>
-                      <th className="text-left text-suspect-gray-400 py-3">Joined</th>
-                      <th className="text-left text-suspect-gray-400 py-3">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {streamers.map((streamer) => (
-                      <tr key={streamer.id} className="border-b border-suspect-gray-800">
-                        <td className="text-suspect-text py-4 font-medium">
-                          {streamer.username}
-                        </td>
-                        <td className="py-4">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            streamer.role === 'admin' 
-                              ? 'bg-red-500/20 text-red-400' 
-                              : 'bg-blue-500/20 text-blue-400'
-                          }`}>
-                            {streamer.role === 'admin' ? 'Admin' : 'Streamer'}
-                          </span>
-                        </td>
-                        <td className="text-suspect-gray-400 py-4">
-                          {streamer.email}
-                        </td>
-                        <td className="text-suspect-text py-4">
-                          {streamer.tiktok_username === 'N/A' ? '-' : streamer.tiktok_username}
-                        </td>
-                        <td className="py-4">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            streamer.is_active 
-                              ? 'bg-green-500/20 text-green-400' 
-                              : 'bg-red-500/20 text-red-400'
-                          }`}>
-                            {streamer.is_active ? 'Active' : 'Inactive'}
-                          </span>
-                        </td>
-                        <td className="text-suspect-gray-400 py-4">
-                          {new Date(streamer.created_at).toLocaleDateString()}
-                        </td>
-                        <td className="py-4">
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={() => deleteUser(streamer.id, streamer.username)}
-                              className="text-red-400 hover:text-red-300 text-sm"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </td>
+                <div className="max-h-96 overflow-y-auto border border-suspect-gray-700 rounded-lg">
+                  <table className="w-full">
+                    <thead className="sticky top-0 bg-suspect-header z-10">
+                      <tr className="border-b border-suspect-gray-700">
+                        <th className="text-left text-suspect-gray-400 py-3 px-4">Username</th>
+                        <th className="text-left text-suspect-gray-400 py-3 px-4">Role</th>
+                        <th className="text-left text-suspect-gray-400 py-3 px-4">Email</th>
+                        <th className="text-left text-suspect-gray-400 py-3 px-4">TikTok</th>
+                        <th className="text-left text-suspect-gray-400 py-3 px-4">Status</th>
+                        <th className="text-left text-suspect-gray-400 py-3 px-4">Joined</th>
+                        <th className="text-left text-suspect-gray-400 py-3 px-4">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {streamers.map((streamer) => (
+                        <tr key={streamer.id} className="border-b border-suspect-gray-800 hover:bg-suspect-gray-800/30 transition-colors">
+                          <td className="text-suspect-text py-4 px-4 font-medium">
+                            {streamer.username}
+                          </td>
+                          <td className="py-4 px-4">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              streamer.role === 'admin' 
+                                ? 'bg-red-500/20 text-red-400' 
+                                : 'bg-blue-500/20 text-blue-400'
+                            }`}>
+                              {streamer.role === 'admin' ? 'Admin' : 'Streamer'}
+                            </span>
+                          </td>
+                          <td className="text-suspect-gray-400 py-4 px-4">
+                            {streamer.email}
+                          </td>
+                          <td className="text-suspect-text py-4 px-4">
+                            {streamer.tiktok_username === 'N/A' ? '-' : streamer.tiktok_username}
+                          </td>
+                          <td className="py-4 px-4">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              streamer.is_active 
+                                ? 'bg-green-500/20 text-green-400' 
+                                : 'bg-red-500/20 text-red-400'
+                            }`}>
+                              {streamer.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
+                          <td className="text-suspect-gray-400 py-4 px-4">
+                            {new Date(streamer.created_at).toLocaleDateString()}
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => deleteUser(streamer.id, streamer.username)}
+                                className="text-red-400 hover:text-red-300 text-sm"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {streamers.length > 6 && (
+                  <div className="text-center text-suspect-gray-400 text-sm mt-2">
+                    Showing {streamers.length} users • Scroll to view more
+                  </div>
+                )}
               </div>
             </div>
           </div>

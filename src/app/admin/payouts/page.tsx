@@ -41,6 +41,11 @@ export default function AdminPayouts() {
   useEffect(() => {
     if (isAdmin) {
       fetchPayouts()
+      
+      // Set up auto-refresh for new payout requests
+      const interval = setInterval(fetchPayouts, 60000) // Every minute
+      
+      return () => clearInterval(interval)
     }
   }, [isAdmin])
 
@@ -250,145 +255,153 @@ export default function AdminPayouts() {
         {/* Payouts Table */}
         <div className="card p-6">
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-suspect-gray-700">
-                  <th className="text-left text-suspect-gray-400 py-3">Streamer</th>
-                  <th className="text-left text-suspect-gray-400 py-3">PayPal</th>
-                  <th className="text-left text-suspect-gray-400 py-3">Amount</th>
-                  <th className="text-left text-suspect-gray-400 py-3">Status</th>
-                  <th className="text-left text-suspect-gray-400 py-3">Stream Info</th>
-                  <th className="text-left text-suspect-gray-400 py-3">Date</th>
-                  <th className="text-left text-suspect-gray-400 py-3">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredPayouts.map((payout, index) => (
-                  <tr 
-                    key={payout.id} 
-                    className="border-b border-suspect-gray-800 hover:bg-suspect-gray-800/50 transition-all duration-300 animate-fade-in-up"
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    <td className="text-suspect-text py-4 font-medium">
-                      {payout.streamer_username}
-                      {payout.type === 'request' && (
-                        <span className="ml-2 px-1 py-0.5 bg-blue-900/50 text-blue-300 text-xs rounded">
-                          Stream
+            <div className="max-h-[500px] overflow-y-auto border border-suspect-gray-700 rounded-lg">
+              <table className="w-full">
+                <thead className="sticky top-0 bg-suspect-header z-10">
+                  <tr className="border-b border-suspect-gray-700">
+                    <th className="text-left text-suspect-gray-400 py-3 px-4">Streamer</th>
+                    <th className="text-left text-suspect-gray-400 py-3 px-4">PayPal</th>
+                    <th className="text-left text-suspect-gray-400 py-3 px-4">Amount</th>
+                    <th className="text-left text-suspect-gray-400 py-3 px-4">Status</th>
+                    <th className="text-left text-suspect-gray-400 py-3 px-4">Stream Info</th>
+                    <th className="text-left text-suspect-gray-400 py-3 px-4">Date</th>
+                    <th className="text-left text-suspect-gray-400 py-3 px-4">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredPayouts.map((payout, index) => (
+                    <tr 
+                      key={payout.id} 
+                      className="border-b border-suspect-gray-800 hover:bg-suspect-gray-800/50 transition-all duration-300 animate-fade-in-up"
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
+                      <td className="text-suspect-text py-4 px-4 font-medium">
+                        {payout.streamer_username}
+                        {payout.type === 'request' && (
+                          <span className="ml-2 px-1 py-0.5 bg-blue-900/50 text-blue-300 text-xs rounded">
+                            Stream
+                          </span>
+                        )}
+                      </td>
+                      <td className="text-suspect-text py-4 px-4">
+                        {payout.paypal_username ? (
+                          <span className="text-sm font-mono bg-gray-800 px-2 py-1 rounded">
+                            {payout.paypal_username}
+                          </span>
+                        ) : (
+                          <span className="text-suspect-gray-500 text-sm">
+                            {payout.type === 'legacy' ? 'Legacy payout' : 'Not provided'}
+                          </span>
+                        )}
+                      </td>
+                      <td className="text-suspect-text py-4 px-4">
+                        ${payout.amount.toFixed(2)}
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          payout.status === 'paid' || payout.status === 'approved'
+                            ? 'bg-green-100 text-green-800'
+                            : payout.status === 'denied'
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {payout.status}
                         </span>
-                      )}
-                    </td>
-                    <td className="text-suspect-text py-4">
-                      {payout.paypal_username ? (
-                        <span className="text-sm font-mono bg-gray-800 px-2 py-1 rounded">
-                          {payout.paypal_username}
-                        </span>
-                      ) : (
-                        <span className="text-suspect-gray-500 text-sm">
-                          {payout.type === 'legacy' ? 'Legacy payout' : 'Not provided'}
-                        </span>
-                      )}
-                    </td>
-                    <td className="text-suspect-text py-4">
-                      ${payout.amount.toFixed(2)}
-                    </td>
-                    <td className="py-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        payout.status === 'paid' || payout.status === 'approved'
-                          ? 'bg-green-100 text-green-800'
-                          : payout.status === 'denied'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {payout.status}
-                      </span>
-                    </td>
-                    <td className="text-suspect-gray-400 py-4">
-                      {payout.type === 'request' ? (
-                        <div className="text-xs">
-                          {payout.duration_minutes && (
-                            <div>⏱️ {Math.floor(payout.duration_minutes / 60)}h {payout.duration_minutes % 60}m</div>
-                          )}
-                          {payout.meets_time_goal !== undefined && (
-                            <div className="flex space-x-1 mt-1">
-                              <span className={payout.meets_time_goal ? 'text-green-400' : 'text-red-400'}>
-                                {payout.meets_time_goal ? '✓' : '✗'} Time
-                              </span>
-                              <span className={payout.meets_viewer_goal ? 'text-green-400' : 'text-red-400'}>
-                                {payout.meets_viewer_goal ? '✓' : '✗'} Views
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-xs text-suspect-gray-500">
-                          {payout.month || 'Legacy payout'}
-                        </span>
-                      )}
-                    </td>
-                    <td className="text-suspect-gray-400 py-4">
-                      {((payout.status === 'paid' || payout.status === 'approved') && payout.paid_at)
-                        ? new Date(payout.paid_at).toLocaleDateString()
-                        : new Date(payout.created_at).toLocaleDateString()
-                      }
-                    </td>
-                    <td className="py-4">
-                      <div className="flex space-x-2">
-                        {payout.status === 'pending' ? (
-                          <>
-                            <button
-                              onClick={() => handleStatusUpdate(payout.id, 'approved')}
-                              className="text-green-400 hover:text-green-300 text-sm font-medium"
-                            >
-                              ✓ Approve
-                            </button>
-                            <button
-                              onClick={() => handleStatusUpdate(payout.id, 'denied')}
-                              className="text-red-400 hover:text-red-300 text-sm font-medium"
-                            >
-                              ✗ Deny
-                            </button>
-                          </>
-                        ) : payout.status === 'approved' ? (
-                          <div className="flex space-x-2">
-                            {payout.paypal_username ? (
-                              <button
-                                onClick={() => handlePayPalPayment(payout)}
-                                className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded text-sm font-medium"
-                              >
-                                💰 Pay via PayPal
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleStatusUpdate(payout.id, 'paid')}
-                                className="text-blue-400 hover:text-blue-300 text-sm"
-                              >
-                                Mark Paid
-                              </button>
+                      </td>
+                      <td className="text-suspect-gray-400 py-4 px-4">
+                        {payout.type === 'request' ? (
+                          <div className="text-xs">
+                            {payout.duration_minutes && (
+                              <div>⏱️ {Math.floor(payout.duration_minutes / 60)}h {payout.duration_minutes % 60}m</div>
+                            )}
+                            {payout.meets_time_goal !== undefined && (
+                              <div className="flex space-x-1 mt-1">
+                                <span className={payout.meets_time_goal ? 'text-green-400' : 'text-red-400'}>
+                                  {payout.meets_time_goal ? '✓' : '✗'} Time
+                                </span>
+                                <span className={payout.meets_viewer_goal ? 'text-green-400' : 'text-red-400'}>
+                                  {payout.meets_viewer_goal ? '✓' : '✗'} Views
+                                </span>
+                              </div>
                             )}
                           </div>
-                        ) : payout.status === 'denied' ? (
-                          <button
-                            onClick={() => handleStatusUpdate(payout.id, 'pending')}
-                            className="text-yellow-400 hover:text-yellow-300 text-sm"
-                          >
-                            🔄 Reopen
-                          </button>
                         ) : (
-                          <span className="text-green-500 text-sm font-medium">✅ Paid</span>
+                          <span className="text-xs text-suspect-gray-500">
+                            {payout.month || 'Legacy payout'}
+                          </span>
                         )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          
-          {filteredPayouts.length === 0 && (
-            <div className="text-center py-8">
-              <p className="text-suspect-gray-400">No payouts found for the selected filter.</p>
+                      </td>
+                      <td className="text-suspect-gray-400 py-4 px-4">
+                        {((payout.status === 'paid' || payout.status === 'approved') && payout.paid_at)
+                          ? new Date(payout.paid_at).toLocaleDateString()
+                          : new Date(payout.created_at).toLocaleDateString()
+                        }
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="flex space-x-2">
+                          {payout.status === 'pending' ? (
+                            <>
+                              <button
+                                onClick={() => handleStatusUpdate(payout.id, 'approved')}
+                                className="text-green-400 hover:text-green-300 text-sm font-medium"
+                              >
+                                ✓ Approve
+                              </button>
+                              <button
+                                onClick={() => handleStatusUpdate(payout.id, 'denied')}
+                                className="text-red-400 hover:text-red-300 text-sm font-medium"
+                              >
+                                ✗ Deny
+                              </button>
+                            </>
+                          ) : payout.status === 'approved' ? (
+                            <div className="flex space-x-2">
+                              {payout.paypal_username ? (
+                                <button
+                                  onClick={() => handlePayPalPayment(payout)}
+                                  className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded text-sm font-medium"
+                                >
+                                  💰 Pay via PayPal
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleStatusUpdate(payout.id, 'paid')}
+                                  className="text-blue-400 hover:text-blue-300 text-sm"
+                                >
+                                  Mark Paid
+                                </button>
+                              )}
+                            </div>
+                          ) : payout.status === 'denied' ? (
+                            <button
+                              onClick={() => handleStatusUpdate(payout.id, 'pending')}
+                              className="text-yellow-400 hover:text-yellow-300 text-sm"
+                            >
+                              🔄 Reopen
+                            </button>
+                          ) : (
+                            <span className="text-green-500 text-sm font-medium">✅ Paid</span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          )}
+            
+            {filteredPayouts.length === 0 && (
+              <div className="text-center py-8">
+                <p className="text-suspect-gray-400">No payouts found for the selected filter.</p>
+              </div>
+            )}
+            
+            {filteredPayouts.length > 8 && (
+              <div className="text-center text-suspect-gray-400 text-sm mt-2">
+                Showing {filteredPayouts.length} payouts • Scroll to view more
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
