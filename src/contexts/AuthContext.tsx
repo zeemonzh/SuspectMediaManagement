@@ -176,11 +176,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      console.log('Signing out...')
-      await supabase.auth.signOut()
-      console.log('Sign out successful')
+      console.log('Starting sign out process...')
+      
+      // Try the main Supabase logout first
+      const { error } = await supabase.auth.signOut()
+      
+      if (error) {
+        console.warn('Supabase logout warning:', error.message)
+        // Don't throw on logout errors - proceed with cleanup
+      }
+      
+      // Call our logout API as a fallback to ensure server-side cleanup
+      try {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+      } catch (apiError) {
+        console.warn('Logout API call failed (non-critical):', apiError)
+        // This is non-critical - the main logout already happened
+      }
+      
+      // Clear local state regardless of API errors
+      setUser(null)
+      setStreamer(null)
+      
+      console.log('Sign out completed successfully')
     } catch (error) {
-      console.error('Error signing out:', error)
+      console.error('Error during sign out:', error)
+      // Even if there's an error, clear the local state
+      setUser(null)
+      setStreamer(null)
     }
   }
 
