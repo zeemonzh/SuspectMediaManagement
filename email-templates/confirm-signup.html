@@ -12,11 +12,16 @@
             box-sizing: border-box;
         }
         
+        /* Force dark mode - override user preferences */
+        html, body {
+            color-scheme: dark !important;
+        }
+        
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             line-height: 1.6;
-            color: #ffffff;
-            background-color: #0b0c10;
+            color: #ffffff !important;
+            background-color: #0b0c10 !important;
             margin: 0;
             padding: 0;
         }
@@ -24,89 +29,53 @@
         .container {
             max-width: 600px;
             margin: 0 auto;
-            background-color: #14151a;
+            background-color: #14151a !important;
             border-radius: 12px;
             overflow: hidden;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
         }
         
         .header {
-            background-color: #14151a;
-            padding: 40px 20px;
+            background-color: #14151a !important;
+            padding: 20px 20px;
             text-align: center;
             border-bottom: 1px solid #334155;
         }
         
-        .logo {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            margin: 0 auto 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            font-size: 42px;
-        }
-        
-        .logo img {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            object-fit: contain;
-            border: 2px solid rgba(233, 33, 61, 0.2);
-            box-shadow: 0 0 20px rgba(233, 33, 61, 0.3);
-            transition: all 0.3s ease;
-            position: relative;
-            z-index: 2;
-        }
-        
-        .logo::before {
-            content: '';
-            position: absolute;
-            inset: -4px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, rgba(233, 33, 61, 0.3), rgba(220, 38, 38, 0.2), rgba(239, 68, 68, 0.3));
-            filter: blur(6px);
-            opacity: 0.7;
-            animation: pulse 3s ease-in-out infinite;
-            z-index: 1;
-        }
-        
         .header h1 {
-            color: #ffffff;
+            color: #e9213d !important;
             font-size: 28px;
             font-weight: 700;
             margin-bottom: 8px;
         }
         
         .header p {
-            color: #94a3b8;
+            color: #94a3b8 !important;
             font-size: 16px;
         }
         
         .content {
-            padding: 40px 30px;
-            background-color: #14151a;
+            padding: 30px 30px;
+            background-color: #14151a !important;
         }
         
         .welcome-text {
             font-size: 20px;
             font-weight: 600;
             margin-bottom: 16px;
-            color: #ffffff;
+            color: #ffffff !important;
         }
         
         .description {
             font-size: 16px;
-            color: #94a3b8;
+            color: #94a3b8 !important;
             margin-bottom: 32px;
             line-height: 1.6;
         }
         
         .cta-button {
             display: inline-block;
-            background-color: #e9213d;
+            background-color: #e9213d !important;
             color: white !important;
             text-decoration: none;
             padding: 16px 32px;
@@ -120,19 +89,19 @@
         }
         
         .cta-button:hover {
-            background-color: #dc2626;
+            background-color: #dc2626 !important;
             transform: translateY(-1px) scale(1.05);
             box-shadow: 0 8px 15px -3px rgba(233, 33, 61, 0.3);
         }
         
         .divider {
             height: 1px;
-            background-color: #334155;
+            background-color: #334155 !important;
             margin: 32px 0;
         }
         
         .alternative-link {
-            background-color: #181a20;
+            background-color: #181a20 !important;
             border-radius: 8px;
             padding: 20px;
             margin: 20px 0;
@@ -140,38 +109,38 @@
         }
         
         .alternative-link p {
-            color: #94a3b8;
+            color: #94a3b8 !important;
             font-size: 14px;
             margin-bottom: 8px;
         }
         
         .alternative-link a {
-            color: #e9213d;
+            color: #e9213d !important;
             text-decoration: none;
             word-break: break-all;
             font-size: 14px;
         }
         
         .footer {
-            background-color: #0b0c10;
-            padding: 30px;
+            background-color: #0b0c10 !important;
+            padding: 20px;
             text-align: center;
             border-top: 1px solid #334155;
         }
         
         .footer p {
-            color: #64748b;
+            color: #64748b !important;
             font-size: 14px;
             margin-bottom: 8px;
         }
         
         .footer a {
-            color: #e9213d;
+            color: #e9213d !important;
             text-decoration: none;
         }
         
         .security-note {
-            background-color: #181a20;
+            background-color: #181a20 !important;
             border-left: 4px solid #e9213d;
             padding: 16px 20px;
             margin: 24px 0;
@@ -179,7 +148,7 @@
         }
         
         .security-note p {
-            color: #cbd5e1;
+            color: #cbd5e1 !important;
             font-size: 14px;
             margin: 0;
         }
@@ -191,11 +160,11 @@
             }
             
             .content {
-                padding: 30px 20px;
+                padding: 20px 20px;
             }
             
             .header {
-                padding: 30px 20px;
+                padding: 20px 20px;
             }
             
             .header h1 {
@@ -209,26 +178,29 @@
             }
         }
         
-        @keyframes pulse {
-            0%, 100% {
-                opacity: 0.6;
-                transform: scale(1);
-            }
-            50% {
-                opacity: 0.8;
-                transform: scale(1.05);
+        /* Force dark colors in email clients */
+        [data-ogsc] body,
+        [data-ogsc] .container,
+        [data-ogsc] .header,
+        [data-ogsc] .content,
+        [data-ogsc] .footer {
+            background-color: #14151a !important;
+            color: #ffffff !important;
+        }
+        
+        /* Outlook dark mode override */
+        @media (prefers-color-scheme: dark) {
+            .container, .header, .content, .footer {
+                background-color: #14151a !important;
             }
         }
     </style>
 </head>
 <body>
-    <div style="background-color: #0b0c10; padding: 20px 0; min-height: 100vh;">
+    <div style="background-color: #0b0c10 !important; padding: 10px 0; min-height: 100vh;">
         <div class="container">
             <!-- Header -->
             <div class="header">
-                <div class="logo">
-                    🚨
-                </div>
                 <h1>SuspectCheats</h1>
                 <p>Welcome to the platform</p>
             </div>
@@ -266,12 +238,8 @@
             <div class="footer">
                 <p><strong>SuspectCheats Management Platform</strong></p>
                 <p>This email was sent to confirm your account registration.</p>
-                <p>
-                    Need help? Contact us at 
-                    <a href="mailto:support@suspectcheats.com">support@suspectcheats.com</a>
-                </p>
             </div>
         </div>
     </div>
 </body>
-</html> 
+</html>
