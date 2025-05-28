@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
+import LoadingSpinner from '@/components/LoadingSpinner'
 
 interface StreamSession {
   id: string
@@ -227,11 +228,7 @@ export default function StreamerDashboard() {
   const activeKey = assignedKeys[0] // Most recent key
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-suspect-body flex items-center justify-center">
-        <div className="text-suspect-text">Loading...</div>
-      </div>
-    )
+    return <LoadingSpinner fullScreen text="Loading streamer dashboard..." />
   }
 
   if (!user || streamer?.role !== 'streamer') {
@@ -376,7 +373,7 @@ export default function StreamerDashboard() {
               <p className="text-suspect-gray-400 text-sm mb-2">Your Assigned Keys:</p>
               {loadingKeys ? (
                 <div className="bg-suspect-dark p-3 rounded-lg border">
-                  <p className="text-suspect-gray-400 text-sm">Loading keys...</p>
+                  <p className="text-suspect-gray-400 text-sm">Loading your keys...</p>
                 </div>
               ) : assignedKeys.length === 0 ? (
                 <div className="bg-suspect-dark p-3 rounded-lg border">

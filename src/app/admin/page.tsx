@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
+import LoadingSpinner, { LoadingDots } from '@/components/LoadingSpinner'
 
 interface DashboardStats {
   totalStreamers: number
@@ -108,11 +109,7 @@ export default function AdminDashboard() {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-suspect-body flex items-center justify-center">
-        <div className="text-suspect-text">Loading...</div>
-      </div>
-    )
+    return <LoadingSpinner fullScreen text="Loading admin dashboard..." />
   }
 
   if (!user || !isAdmin) {
@@ -241,7 +238,7 @@ export default function AdminDashboard() {
                   <p className="text-suspect-gray-400 text-sm group-hover:text-suspect-gray-300 transition-colors duration-300">{card.title}</p>
                   <p className="text-2xl font-bold text-suspect-text group-hover:text-suspect-primary transition-colors duration-300">
                     {loadingStats ? (
-                      <span className="animate-shimmer">...</span>
+                      <LoadingDots size="sm" />
                     ) : (
                       <span className="animate-fade-in">{card.value}</span>
                     )}
@@ -282,7 +279,12 @@ export default function AdminDashboard() {
         <div className="card p-6 animate-fade-in-up stagger-6 hover:shadow-lg hover:shadow-suspect-gray-700/30 transition-all duration-300">
           <h2 className="text-xl font-semibold text-suspect-text mb-4">Recent Stream Activity</h2>
           {loadingActivity ? (
-            <div className="text-center text-suspect-gray-400 py-8 animate-pulse">Loading activity...</div>
+            <div className="text-center text-suspect-gray-400 py-8">
+              <div className="flex flex-col items-center space-y-3">
+                <LoadingDots size="lg" />
+                <span className="text-suspect-gray-400">Loading activity...</span>
+              </div>
+            </div>
           ) : recentActivity.length === 0 ? (
             <div className="text-center text-suspect-gray-400 py-8 animate-fade-in">No recent activity</div>
           ) : (

@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import Link from 'next/link'
+import LoadingSpinner from '@/components/LoadingSpinner'
 
 export default function SetupPage() {
   const { user, streamer, loading, signOut } = useAuth()
@@ -26,18 +27,7 @@ export default function SetupPage() {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-suspect-body flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-2xl font-bold text-suspect-text animate-pulse-slow">
-            SuspectCheats
-          </div>
-          <div className="text-suspect-gray-400 mt-2 animate-dots">
-            Loading...
-          </div>
-        </div>
-      </div>
-    )
+    return <LoadingSpinner fullScreen text="Checking setup status..." />
   }
 
   if (!user) {

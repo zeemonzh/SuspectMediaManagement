@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import LoadingSpinner from '@/components/LoadingSpinner'
 
 interface StreamerAnalytics {
   id: string
@@ -87,7 +88,7 @@ function StreamerGoalsTable({ allStreamers }: { allStreamers: Streamer[] }) {
   }
 
   if (loading) {
-    return <div className="text-suspect-gray-400">Loading streamer goals...</div>
+    return <LoadingSpinner text="Loading streamer goals..." />
   }
 
   return (
@@ -381,11 +382,7 @@ export default function AdminAnalytics() {
   const improvingStreamers = streamers.filter(s => s.growthRate > 0).sort((a, b) => b.growthRate - a.growthRate)
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-suspect-body flex items-center justify-center">
-        <div className="text-suspect-text">Loading analytics...</div>
-      </div>
-    )
+    return <LoadingSpinner fullScreen text="Loading analytics..." />
   }
 
   return (

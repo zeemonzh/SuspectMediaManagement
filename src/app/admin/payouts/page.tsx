@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
+import LoadingSpinner from '@/components/LoadingSpinner'
 
 interface Payout {
   id: string
@@ -138,11 +139,7 @@ export default function AdminPayouts() {
   }
 
   if (authLoading || loading) {
-    return (
-      <div className="min-h-screen bg-suspect-body flex items-center justify-center">
-        <div className="text-suspect-text">Loading payouts...</div>
-      </div>
-    )
+    return <LoadingSpinner fullScreen text="Loading payouts..." />
   }
 
   if (!user || !isAdmin) {

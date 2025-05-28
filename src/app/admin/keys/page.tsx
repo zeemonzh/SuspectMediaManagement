@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import LoadingSpinner from '@/components/LoadingSpinner'
 
 interface ProductKey {
   id: string
@@ -378,11 +379,7 @@ export default function AdminProductKeys() {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-suspect-body flex items-center justify-center">
-        <div className="text-suspect-text">Loading product keys...</div>
-      </div>
-    )
+    return <LoadingSpinner fullScreen text="Loading product keys..." />
   }
 
   return (

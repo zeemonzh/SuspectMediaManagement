@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
+import LoadingSpinner, { LoadingDots } from '@/components/LoadingSpinner'
 
 interface InvitationKey {
   id: string
@@ -366,11 +367,7 @@ export default function AdminSettings() {
   }, [activityCategory])
 
   if (authLoading || loading) {
-    return (
-      <div className="min-h-screen bg-suspect-body flex items-center justify-center">
-        <div className="text-suspect-text">Loading settings...</div>
-      </div>
-    )
+    return <LoadingSpinner fullScreen text="Loading settings..." />
   }
 
   if (!user || !isAdmin) {
@@ -767,7 +764,7 @@ export default function AdminSettings() {
 
             <div className="card p-6">
               {activityLoading && activityLogs.length === 0 ? (
-                <div className="text-center text-suspect-gray-400 py-8">Loading activity logs...</div>
+                <LoadingSpinner text="Loading activity logs..." />
               ) : activityLogs.length === 0 ? (
                 <div className="text-center text-suspect-gray-400 py-8">
                   <div className="text-4xl mb-4">📋</div>
@@ -819,17 +816,20 @@ export default function AdminSettings() {
                     </div>
                   ))}
                   
-                  {activityLogs.length < activityTotal && (
-                    <div className="text-center pt-4">
-                      <button
-                        onClick={loadMoreActivities}
-                        disabled={activityLoading}
-                        className="btn-secondary"
-                      >
-                        {activityLoading ? 'Loading...' : `Load More (${activityLogs.length}/${activityTotal})`}
-                      </button>
-                    </div>
-                  )}
+                  <div className="text-center pt-4">
+                    <button
+                      onClick={loadMoreActivities}
+                      disabled={activityLoading || activityLogs.length >= activityTotal}
+                      className="btn-secondary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {activityLoading ? (
+                        <div className="flex items-center justify-center space-x-2">
+                          <LoadingDots size="sm" />
+                          <span>Loading...</span>
+                        </div>
+                      ) : `Load More (${activityLogs.length}/${activityTotal})`}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

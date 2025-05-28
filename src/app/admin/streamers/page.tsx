@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useAuth } from '@/contexts/AuthContext'
+import { useRouter } from 'next/navigation'
+import LoadingSpinner from '@/components/LoadingSpinner'
 
 interface Streamer {
   id: string
@@ -91,6 +94,10 @@ export default function AdminStreamers() {
     }
   }
 
+  if (loading) {
+    return <LoadingSpinner fullScreen text="Loading streamers..." />
+  }
+
   return (
     <div className="min-h-screen bg-suspect-body">
       {/* Header */}
@@ -155,9 +162,6 @@ export default function AdminStreamers() {
         <div className="card p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold text-suspect-text">All Streamers</h2>
-            {loading && (
-              <div className="text-suspect-gray-400">Loading...</div>
-            )}
           </div>
           
           <div className="overflow-x-auto">

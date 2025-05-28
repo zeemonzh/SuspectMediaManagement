@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
+import LoadingSpinner from '@/components/LoadingSpinner'
 
 interface StreamSession {
   id: string
@@ -180,11 +181,7 @@ export default function AdminSessions() {
   }
 
   if (authLoading || loading) {
-    return (
-      <div className="min-h-screen bg-suspect-body flex items-center justify-center">
-        <div className="text-suspect-text">Loading stream sessions...</div>
-      </div>
-    )
+    return <LoadingSpinner fullScreen text="Loading stream sessions..." />
   }
 
   if (!user || !isAdmin) {
