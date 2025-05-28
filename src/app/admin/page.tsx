@@ -200,15 +200,15 @@ export default function AdminDashboard() {
       <header className="bg-suspect-header border-b border-suspect-gray-700 animate-slide-up">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <div className="flex items-center animate-fade-in">
-              <Link href="/" className="text-2xl font-bold text-suspect-text hover:text-suspect-primary transition-colors duration-300">
+            <div className="flex items-center animate-fade-in min-w-0 flex-1">
+              <Link href="/" className="text-xl sm:text-2xl font-bold text-suspect-text hover:text-suspect-primary transition-colors duration-300 truncate">
                 SuspectCheats
               </Link>
-              <span className="ml-2 text-suspect-gray-400 animate-fade-in stagger-1">Admin Panel</span>
+              <span className="hidden sm:block ml-2 text-suspect-gray-400 animate-fade-in stagger-1">Admin Panel</span>
             </div>
-            <div className="flex items-center space-x-4 animate-fade-in stagger-2">
-              <span className="text-suspect-gray-400">Welcome, {streamer?.username || user?.email || 'Admin'}</span>
-              <button onClick={handleLogout} className="btn-secondary">Logout</button>
+            <div className="flex items-center space-x-2 sm:space-x-4 animate-fade-in stagger-2">
+              <span className="hidden md:block text-suspect-gray-400 text-sm">Welcome, {streamer?.username || user?.email || 'Admin'}</span>
+              <button onClick={handleLogout} className="btn-secondary text-sm px-3 py-1 sm:px-4 sm:py-2">Logout</button>
             </div>
           </div>
         </div>
