@@ -405,7 +405,7 @@ export default function AdminProductKeys() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 space-y-4 sm:space-y-0">
           <div>
             <h1 className="text-3xl font-bold text-suspect-text">Product Keys</h1>
             <p className="text-suspect-gray-400 mt-2">
@@ -416,14 +416,14 @@ export default function AdminProductKeys() {
             {activeTab === 'categories' ? (
               <button
                 onClick={() => setShowAddCategoryModal(true)}
-                className="btn-primary"
+                className="btn-primary w-full sm:w-auto"
               >
                 Add Category
               </button>
             ) : (
               <button
                 onClick={() => setShowAddKeyModal(true)}
-                className="btn-primary"
+                className="btn-primary w-full sm:w-auto"
               >
                 Add New Key
               </button>
@@ -462,36 +462,39 @@ export default function AdminProductKeys() {
         {/* Tabs */}
         <div className="card mb-8">
           <div className="border-b border-suspect-gray-700">
-            <nav className="flex space-x-8 px-6">
+            <nav className="flex px-6 overflow-x-auto">
               <button
                 onClick={() => setActiveTab('requests')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                className={`py-4 px-2 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
                   activeTab === 'requests'
                     ? 'border-suspect-primary text-suspect-primary'
                     : 'border-transparent text-suspect-gray-400 hover:text-suspect-gray-300'
                 }`}
               >
-                Key Requests ({stats.pendingRequests})
+                <span className="sm:hidden">Requests ({stats.pendingRequests})</span>
+                <span className="hidden sm:inline">Key Requests ({stats.pendingRequests})</span>
               </button>
               <button
                 onClick={() => setActiveTab('keys')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                className={`py-4 px-2 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
                   activeTab === 'keys'
                     ? 'border-suspect-primary text-suspect-primary'
                     : 'border-transparent text-suspect-gray-400 hover:text-suspect-gray-300'
                 }`}
               >
-                All Keys ({stats.totalKeys})
+                <span className="sm:hidden">Keys ({stats.totalKeys})</span>
+                <span className="hidden sm:inline">All Keys ({stats.totalKeys})</span>
               </button>
               <button
                 onClick={() => setActiveTab('categories')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                className={`py-4 px-2 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
                   activeTab === 'categories'
                     ? 'border-suspect-primary text-suspect-primary'
                     : 'border-transparent text-suspect-gray-400 hover:text-suspect-gray-300'
                 }`}
               >
-                Categories ({productCategories.length})
+                <span className="sm:hidden">Categories ({productCategories.length})</span>
+                <span className="hidden sm:inline">Categories ({productCategories.length})</span>
               </button>
             </nav>
           </div>

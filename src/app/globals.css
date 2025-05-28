@@ -146,6 +146,46 @@ body {
   .hover-glow:hover {
     filter: drop-shadow(0 0 8px rgba(233, 33, 61, 0.3));
   }
+
+  /* Mobile optimizations */
+  @media (max-width: 640px) {
+    .card {
+      @apply p-4;
+    }
+    
+    .btn-primary, .btn-secondary {
+      @apply text-sm;
+    }
+    
+    /* Improved table scrolling on mobile */
+    .overflow-x-auto {
+      scrollbar-width: thin;
+      scrollbar-color: #374151 #1f2937;
+    }
+    
+    .overflow-x-auto::-webkit-scrollbar {
+      height: 6px;
+    }
+    
+    .overflow-x-auto::-webkit-scrollbar-track {
+      background: #1f2937;
+      border-radius: 3px;
+    }
+    
+    .overflow-x-auto::-webkit-scrollbar-thumb {
+      background: #374151;
+      border-radius: 3px;
+    }
+    
+    .overflow-x-auto::-webkit-scrollbar-thumb:hover {
+      background: #4b5563;
+    }
+
+    /* Better modal sizing on mobile */
+    .fixed.inset-0 .inline-block {
+      @apply mx-4;
+    }
+  }
 }
 
 @keyframes float {

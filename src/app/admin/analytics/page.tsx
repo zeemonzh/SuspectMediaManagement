@@ -408,7 +408,7 @@ export default function AdminAnalytics() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 space-y-4 sm:space-y-0">
           <div>
             <h1 className="text-3xl font-bold text-suspect-text">Analytics & Goals</h1>
             <p className="text-suspect-gray-400 mt-2">
@@ -422,7 +422,7 @@ export default function AdminAnalytics() {
               <button
                 key={period}
                 onClick={() => setTimeframe(period)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors flex-1 sm:flex-none ${
                   timeframe === period
                     ? 'bg-suspect-primary text-white'
                     : 'bg-suspect-gray-700 text-suspect-gray-400 hover:bg-suspect-gray-600'

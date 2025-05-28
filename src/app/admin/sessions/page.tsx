@@ -257,22 +257,23 @@ export default function AdminSessions() {
 
         {/* Tabs */}
         <div className="border-b border-suspect-gray-700 mb-8">
-          <nav className="-mb-px flex space-x-8">
+          <nav className="-mb-px flex">
             {[
-              { id: 'live', name: `Live Streams (${stats.activeSessions})`, icon: '🔴' },
-              { id: 'history', name: 'Session History', icon: '📊' }
+              { id: 'live', name: `Live Streams (${stats.activeSessions})`, icon: '🔴', shortName: `Live (${stats.activeSessions})` },
+              { id: 'history', name: 'Session History', icon: '📊', shortName: 'History' }
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
+                className={`py-2 px-3 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-1 sm:space-x-2 flex-1 justify-center sm:justify-start sm:flex-none ${
                   activeTab === tab.id
                     ? 'border-suspect-primary text-suspect-primary'
                     : 'border-transparent text-suspect-gray-400 hover:text-suspect-text hover:border-suspect-gray-300'
                 }`}
               >
-                <span>{tab.icon}</span>
-                <span>{tab.name}</span>
+                <span className="text-sm sm:text-base">{tab.icon}</span>
+                <span className="sm:hidden">{tab.shortName}</span>
+                <span className="hidden sm:inline">{tab.name}</span>
               </button>
             ))}
           </nav>
@@ -281,7 +282,7 @@ export default function AdminSessions() {
         {/* Live Streams Tab */}
         {activeTab === 'live' && (
           <div className="space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-2 sm:space-y-0">
               <h2 className="text-xl font-semibold text-suspect-text">Live Streams</h2>
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>

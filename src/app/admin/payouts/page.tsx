@@ -227,22 +227,25 @@ export default function AdminPayouts() {
 
         {/* Filters */}
         <div className="card p-6 mb-8">
-          <div className="flex items-center space-x-4">
+          <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
             <span className="text-suspect-text font-medium">Filter:</span>
-            <div className="flex space-x-2">
+            <div className="flex flex-wrap gap-2">
               {(['all', 'pending', 'approved', 'denied', 'paid'] as const).map((status) => (
                 <button
                   key={status}
                   onClick={() => setFilter(status)}
-                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                  className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors ${
                     filter === status
                       ? 'bg-suspect-primary text-white'
                       : 'bg-suspect-gray-700 text-suspect-gray-400 hover:bg-suspect-gray-600'
                   }`}
                 >
-                  {status.charAt(0).toUpperCase() + status.slice(1)} ({
+                  <span className="sm:hidden">{status.charAt(0).toUpperCase() + status.slice(1)} ({
                     status === 'all' ? payouts.length : payouts.filter(p => p.status === status).length
-                  })
+                  })</span>
+                  <span className="hidden sm:inline">{status.charAt(0).toUpperCase() + status.slice(1)} ({
+                    status === 'all' ? payouts.length : payouts.filter(p => p.status === status).length
+                  })</span>
                 </button>
               ))}
             </div>

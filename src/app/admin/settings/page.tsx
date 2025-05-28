@@ -406,24 +406,25 @@ export default function AdminSettings() {
 
         {/* Tabs */}
         <div className="border-b border-suspect-gray-700 mb-8">
-          <nav className="-mb-px flex space-x-8">
+          <nav className="-mb-px grid grid-cols-2 md:flex md:space-x-8 gap-2 md:gap-0">
             {[
-              { id: 'invitations', name: 'Invitation Keys', icon: '🔑' },
-              { id: 'users', name: 'User Management', icon: '👥' },
-              { id: 'system', name: 'Security Settings', icon: '🔒' },
-              { id: 'logs', name: 'Activity Logs', icon: '📋' }
+              { id: 'invitations', name: 'Invitation Keys', icon: '🔑', shortName: 'Keys' },
+              { id: 'users', name: 'User Management', icon: '👥', shortName: 'Users' },
+              { id: 'system', name: 'Security Settings', icon: '🔒', shortName: 'Security' },
+              { id: 'logs', name: 'Activity Logs', icon: '📋', shortName: 'Logs' }
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
+                className={`py-2 px-1 border-b-2 font-medium text-xs md:text-sm flex items-center justify-center md:justify-start space-x-1 md:space-x-2 ${
                   activeTab === tab.id
                     ? 'border-suspect-primary text-suspect-primary'
                     : 'border-transparent text-suspect-gray-400 hover:text-suspect-text hover:border-suspect-gray-300'
                 }`}
               >
-                <span>{tab.icon}</span>
-                <span>{tab.name}</span>
+                <span className="text-sm md:text-base">{tab.icon}</span>
+                <span className="md:hidden">{tab.shortName}</span>
+                <span className="hidden md:inline">{tab.name}</span>
               </button>
             ))}
           </nav>
@@ -432,7 +433,7 @@ export default function AdminSettings() {
         {/* Invitation Keys Tab */}
         {activeTab === 'invitations' && (
           <div className="space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-4 sm:space-y-0">
               <div>
                 <h2 className="text-xl font-semibold text-suspect-text">Invitation Keys</h2>
                 <p className="text-suspect-gray-400 mt-1">
@@ -441,7 +442,7 @@ export default function AdminSettings() {
               </div>
               <button
                 onClick={() => setShowCreateKeyModal(true)}
-                className="btn-primary"
+                className="btn-primary w-full sm:w-auto"
               >
                 Generate Keys
               </button>
