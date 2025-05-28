@@ -168,24 +168,7 @@ export default function RegisterPage() {
               </div>
             )}
 
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-suspect-text mb-2">
-                Username
-              </label>
-              <input
-                id="username"
-                name="username"
-                type="text"
-                autoComplete="username"
-                required
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="input-field w-full"
-                placeholder="Choose a username"
-              />
-            </div>
-
-            {/* TikTok Username Field - only for streamers */}
+            {/* TikTok Username Field - moved above username for streamers */}
             {role === 'streamer' && (
               <div>
                 <label htmlFor="tiktokUsername" className="block text-sm font-medium text-suspect-text mb-2">
@@ -207,6 +190,23 @@ export default function RegisterPage() {
                 </p>
               </div>
             )}
+
+            <div>
+              <label htmlFor="username" className="block text-sm font-medium text-suspect-text mb-2">
+                Username
+              </label>
+              <input
+                id="username"
+                name="username"
+                type="text"
+                autoComplete="username"
+                required
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="input-field w-full"
+                placeholder="Choose a username"
+              />
+            </div>
 
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-suspect-text mb-2">
