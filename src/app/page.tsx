@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
@@ -8,19 +8,35 @@ import { useAuth } from '@/contexts/AuthContext'
 export default function Home() {
   const { user, streamer, loading } = useAuth()
   const router = useRouter()
+  const [redirecting, setRedirecting] = useState(false)
 
   useEffect(() => {
-    // Redirect authenticated users to their dashboard
-    if (user && streamer) {
-      if (streamer.role === 'admin') {
-        router.push('/admin')
-      } else {
-        router.push('/streamer')
+    // Don't make redirect decisions until auth is no longer loading
+    if (loading) return
+    
+    // Small delay to ensure auth state is settled
+    const timer = setTimeout(() => {
+      if (user) {
+        setRedirecting(true)
+        
+        if (streamer) {
+          if (streamer.role === 'admin') {
+            router.push('/admin')
+          } else {
+            router.push('/streamer')
+          }
+        } else {
+          // User exists but no streamer record - redirect to setup
+          router.push('/setup')
+        }
       }
-    }
-  }, [user, streamer, router])
+    }, 100)
+    
+    return () => clearTimeout(timer)
+  }, [user, streamer, loading, router])
 
-  if (loading) {
+  // Show loading during auth initialization or redirect
+  if (loading || redirecting) {
     return (
       <div className="min-h-screen bg-suspect-body flex items-center justify-center">
         <div className="text-center">
@@ -28,7 +44,7 @@ export default function Home() {
             SuspectCheats
           </div>
           <div className="text-suspect-gray-400 mt-2 animate-dots">
-            Loading
+            {redirecting ? 'Redirecting...' : 'Loading...'}
           </div>
         </div>
       </div>

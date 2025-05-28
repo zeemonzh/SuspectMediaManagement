@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useRef } from 'react'
 import { createSupabaseBrowserClient } from '@/lib/supabase'
 import type { User } from '@supabase/supabase-js'
 import type { Streamer } from '@/lib/supabase'
@@ -24,31 +24,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const supabase = createSupabaseBrowserClient()
 
   useEffect(() => {
-    // Get initial session
-    const getSession = async () => {
-      try {
-        console.log('Getting initial session...')
-        const { data: { session } } = await supabase.auth.getSession()
-        console.log('Session result:', session)
-        setUser(session?.user ?? null)
-        
-        if (session?.user) {
-          await fetchStreamerData(session.user.id)
-        }
-        
-        console.log('Setting loading to false')
-        setLoading(false)
-      } catch (error) {
-        console.error('Error in getSession:', error)
-        setLoading(false)
-      }
-    }
-
-    getSession()
+    let isMounted = true
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!isMounted) return
+        
         setUser(session?.user ?? null)
         
         if (session?.user) {
@@ -61,24 +43,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      isMounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   const fetchStreamerData = async (userId: string) => {
     try {
-      console.log('Fetching streamer data for user:', userId)
-      const { data, error } = await supabase
-        .from('streamers')
-        .select('*')
-        .eq('user_id', userId)
-        .single()
-
-      console.log('Streamer query result:', { data, error })
-
-      if (!error && data) {
-        setStreamer(data)
+      const response = await fetch(`/api/auth/streamer?user_id=${userId}`)
+      const result = await response.json()
+      
+      if (result.streamer) {
+        setStreamer(result.streamer)
       } else {
-        console.log('No streamer record found or error occurred')
         setStreamer(null)
       }
     } catch (error) {

@@ -4,7 +4,8 @@ import { createBrowserClient } from '@supabase/ssr'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Remove the old export that's causing multiple instances
+// export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Database Types
 export interface Streamer {
@@ -78,7 +79,16 @@ export interface KeyRequest {
 export const createSupabaseBrowserClient = () => {
   return createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      auth: {
+        // Ensure sessions persist in localStorage and auto-refresh
+        autoRefreshToken: true,
+        persistSession: true,
+        // Optional: Configure custom storage if needed
+        // storage: window?.localStorage
+      }
+    }
   )
 }
 
