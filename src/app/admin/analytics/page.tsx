@@ -94,15 +94,15 @@ function StreamerGoalsTable({ allStreamers }: { allStreamers: Streamer[] }) {
   return (
     <div className="overflow-x-auto">
       <div className="max-h-96 overflow-y-auto border border-suspect-gray-700 rounded-lg">
-        <table className="w-full">
+        <table className="w-full min-w-[640px]">
           <thead className="sticky top-0 bg-suspect-header z-10">
             <tr className="border-b border-suspect-gray-700">
-              <th className="text-left text-suspect-gray-400 py-3 px-4">Streamer</th>
-              <th className="text-left text-suspect-gray-400 py-3 px-4">Settings Type</th>
-              <th className="text-left text-suspect-gray-400 py-3 px-4">Min Duration</th>
-              <th className="text-left text-suspect-gray-400 py-3 px-4">Target Viewers</th>
-              <th className="text-left text-suspect-gray-400 py-3 px-4">Base Payout</th>
-              <th className="text-left text-suspect-gray-400 py-3 px-4">Partial Payout</th>
+              <th className="text-left text-suspect-gray-400 py-3 px-3 min-w-[120px]">Streamer</th>
+              <th className="text-left text-suspect-gray-400 py-3 px-3 min-w-[100px]">Type</th>
+              <th className="text-left text-suspect-gray-400 py-3 px-2 min-w-[80px]">Duration</th>
+              <th className="text-left text-suspect-gray-400 py-3 px-2 min-w-[80px]">Viewers</th>
+              <th className="text-left text-suspect-gray-400 py-3 px-2 min-w-[80px]">Base $</th>
+              <th className="text-left text-suspect-gray-400 py-3 px-2 min-w-[80px]">Partial $</th>
             </tr>
           </thead>
           <tbody>
@@ -113,31 +113,31 @@ function StreamerGoalsTable({ allStreamers }: { allStreamers: Streamer[] }) {
 
               return (
                 <tr key={streamer.id} className="border-b border-suspect-gray-800 hover:bg-suspect-gray-800/30 transition-colors">
-                  <td className="text-suspect-text py-4 px-4 font-medium">
+                  <td className="text-suspect-text py-4 px-3 font-medium min-w-[120px]">
                     <div>
-                      <div>{streamer.username}</div>
-                      <div className="text-sm text-suspect-gray-400">{streamer.tiktok_username}</div>
+                      <div className="font-medium truncate">{streamer.username}</div>
+                      <div className="text-xs text-suspect-gray-400 truncate">{streamer.tiktok_username}</div>
                     </div>
                   </td>
-                  <td className="py-4 px-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  <td className="py-4 px-3 min-w-[100px]">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
                       isCustom 
                         ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
                         : 'bg-suspect-gray-700 text-suspect-gray-300 border border-suspect-gray-600'
                     }`}>
-                      {isCustom ? 'Custom' : 'System Default'}
+                      {isCustom ? 'Custom' : 'Default'}
                     </span>
                   </td>
-                  <td className="text-suspect-text py-4 px-4">
-                    {goals?.minimum_duration_minutes || systemDefaults?.minimum_duration_minutes || 60} min
+                  <td className="text-suspect-text py-4 px-2 text-sm">
+                    {goals?.minimum_duration_minutes || systemDefaults?.minimum_duration_minutes || 60}min
                   </td>
-                  <td className="text-suspect-text py-4 px-4">
+                  <td className="text-suspect-text py-4 px-2 text-sm">
                     {(goals?.target_viewers || systemDefaults?.target_viewers || 1000).toLocaleString()}
                   </td>
-                  <td className="text-suspect-text py-4 px-4">
+                  <td className="text-suspect-text py-4 px-2 text-sm">
                     ${(goals?.base_payout || systemDefaults?.base_payout || 7.20).toFixed(2)}
                   </td>
-                  <td className="text-suspect-text py-4 px-4">
+                  <td className="text-suspect-text py-4 px-2 text-sm">
                     ${(goals?.partial_payout || systemDefaults?.partial_payout || 4.50).toFixed(2)}
                   </td>
                 </tr>
@@ -147,28 +147,30 @@ function StreamerGoalsTable({ allStreamers }: { allStreamers: Streamer[] }) {
         </table>
       </div>
 
-      {/* Summary */}
-      <div className="mt-4 flex justify-between items-center text-sm">
-        <div className="text-suspect-gray-400">
-          Total: {allStreamers.length} streamers
-        </div>
-        <div className="flex space-x-4">
+      {/* Mobile-friendly Summary */}
+      <div className="mt-4 space-y-3">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center text-sm space-y-2 sm:space-y-0">
           <div className="text-suspect-gray-400">
-            <span className="inline-block w-3 h-3 bg-blue-500/20 border border-blue-500/30 rounded-full mr-2"></span>
-            Custom: {streamerGoals.length}
+            Total: {allStreamers.length} streamers
           </div>
-          <div className="text-suspect-gray-400">
-            <span className="inline-block w-3 h-3 bg-suspect-gray-700 border border-suspect-gray-600 rounded-full mr-2"></span>
-            System Default: {allStreamers.length - streamerGoals.length}
+          <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0">
+            <div className="flex items-center text-suspect-gray-400">
+              <span className="inline-block w-3 h-3 bg-blue-500/20 border border-blue-500/30 rounded-full mr-2"></span>
+              <span className="text-sm">Custom Settings: {streamerGoals.length}</span>
+            </div>
+            <div className="flex items-center text-suspect-gray-400">
+              <span className="inline-block w-3 h-3 bg-suspect-gray-700 border border-suspect-gray-600 rounded-full mr-2"></span>
+              <span className="text-sm">System Defaults: {allStreamers.length - streamerGoals.length}</span>
+            </div>
           </div>
         </div>
+        
+        {allStreamers.length > 8 && (
+          <div className="text-center text-suspect-gray-400 text-sm pt-2 border-t border-suspect-gray-700">
+            Showing {allStreamers.length} streamers • Scroll horizontally to view all columns
+          </div>
+        )}
       </div>
-      
-      {allStreamers.length > 8 && (
-        <div className="text-center text-suspect-gray-400 text-sm mt-2">
-          Showing {allStreamers.length} streamers • Scroll to view more
-        </div>
-      )}
     </div>
   )
 }
