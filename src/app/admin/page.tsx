@@ -161,37 +161,37 @@ export default function AdminDashboard() {
   const quickActions = [
     {
       title: 'Manage Streamers',
-      description: 'Add, edit, or deactivate streamer accounts',
+      description: 'View and toggle streamer status',
       href: '/admin/streamers',
       icon: '👤'
     },
     {
       title: 'Stream Sessions',
-      description: 'View live streams and session history',
+      description: 'Monitor live streams and history',
       href: '/admin/sessions',
       icon: '📺'
     },
     {
       title: 'Payouts',
-      description: 'Review and process streamer payments',
+      description: 'Approve and process payments',
       href: '/admin/payouts',
       icon: '💳'
     },
     {
       title: 'Product Keys',
-      description: 'Manage product keys and requests',
+      description: 'Manage 24h keys and requests',
       href: '/admin/keys',
       icon: '🔐'
     },
     {
       title: 'Goals & Analytics',
-      description: 'Set goals and view performance analytics',
+      description: 'Configure goals and metrics',
       href: '/admin/analytics',
       icon: '📊'
     },
     {
       title: 'Settings',
-      description: 'Platform settings and configuration',
+      description: 'Users, invites, and activity logs',
       href: '/admin/settings',
       icon: '⚙️'
     }
