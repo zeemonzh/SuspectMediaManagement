@@ -505,14 +505,14 @@ export default function AdminProductKeys() {
                 <h2 className="text-xl font-semibold text-suspect-text mb-4">Key Requests</h2>
                 <div className="overflow-x-auto">
                   <div className="max-h-96 overflow-y-auto border border-suspect-gray-700 rounded-lg">
-                    <table className="w-full">
+                    <table className="w-full min-w-[700px]">
                       <thead className="sticky top-0 bg-suspect-header z-10">
                         <tr className="border-b border-suspect-gray-700">
-                          <th className="text-left text-suspect-gray-400 py-3 px-4">Streamer</th>
-                          <th className="text-left text-suspect-gray-400 py-3 px-4">Product Name</th>
-                          <th className="text-left text-suspect-gray-400 py-3 px-4">Status</th>
-                          <th className="text-left text-suspect-gray-400 py-3 px-4">Date</th>
-                          <th className="text-left text-suspect-gray-400 py-3 px-4">Actions</th>
+                          <th className="text-left text-suspect-gray-400 py-3 px-4 min-w-[120px]">Streamer</th>
+                          <th className="text-left text-suspect-gray-400 py-3 px-4 min-w-[180px]">Product Name</th>
+                          <th className="text-left text-suspect-gray-400 py-3 px-4 min-w-[100px]">Status</th>
+                          <th className="text-left text-suspect-gray-400 py-3 px-4 min-w-[100px]">Date</th>
+                          <th className="text-left text-suspect-gray-400 py-3 px-4 min-w-[120px]">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -525,9 +525,9 @@ export default function AdminProductKeys() {
                               <td className="text-suspect-text py-4 px-4 font-medium">
                                 {request.streamer_username}
                               </td>
-                              <td className="text-suspect-text py-4 px-4 max-w-xs">
+                              <td className="text-suspect-text py-4 px-4">
                                 <div>
-                                  <div>{request.reason}</div>
+                                  <div className="font-medium">{request.reason}</div>
                                   {keyInfo.hasMatchingCategory && request.status === 'pending' && (
                                     <div className="text-xs text-suspect-gray-400 mt-1">
                                       {keyInfo.categoryKeys > 0 ? (
@@ -550,20 +550,20 @@ export default function AdminProductKeys() {
                               <td className="py-4 px-4">
                                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                                   request.status === 'approved'
-                                    ? 'bg-green-100 text-green-800'
+                                    ? 'bg-green-500/20 text-green-400'
                                     : request.status === 'denied'
-                                    ? 'bg-red-100 text-red-800'
-                                    : 'bg-yellow-100 text-yellow-800'
+                                    ? 'bg-red-500/20 text-red-400'
+                                    : 'bg-yellow-500/20 text-yellow-400'
                                 }`}>
                                   {request.status}
                                 </span>
                               </td>
-                              <td className="text-suspect-gray-400 py-4 px-4">
+                              <td className="text-suspect-gray-400 py-4 px-4 text-sm">
                                 {new Date(request.created_at).toLocaleDateString()}
                               </td>
                               <td className="py-4 px-4">
                                 {request.status === 'pending' ? (
-                                  <div className="flex space-x-2">
+                                  <div className="flex flex-col sm:flex-row sm:space-x-2 space-y-1 sm:space-y-0">
                                     <button
                                       onClick={() => {
                                         if (!canApprove) {
@@ -572,21 +572,21 @@ export default function AdminProductKeys() {
                                         }
                                         handleRequestAction(request.id, 'approved', 'Request approved')
                                       }}
-                                      className={`text-sm ${
+                                      className={`text-sm px-2 py-1 rounded ${
                                         canApprove 
-                                          ? 'text-green-400 hover:text-green-300'
+                                          ? 'text-green-400 hover:text-green-300 hover:bg-green-500/10'
                                           : 'text-gray-500 cursor-not-allowed'
                                       }`}
                                       disabled={!canApprove}
                                       title={canApprove ? 'Approve request' : 'No available keys'}
                                     >
-                                      Approve {!canApprove && '⚠️'}
+                                      ✓ Approve {!canApprove && '⚠️'}
                                     </button>
                                     <button
                                       onClick={() => handleRequestAction(request.id, 'denied', 'Request denied')}
-                                      className="text-red-400 hover:text-red-300 text-sm"
+                                      className="text-red-400 hover:text-red-300 hover:bg-red-500/10 text-sm px-2 py-1 rounded"
                                     >
-                                      Deny
+                                      ✗ Deny
                                     </button>
                                   </div>
                                 ) : (
