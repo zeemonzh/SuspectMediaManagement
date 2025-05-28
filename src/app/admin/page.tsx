@@ -236,13 +236,13 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <p className="text-suspect-gray-400 text-sm group-hover:text-suspect-gray-300 transition-colors duration-300">{card.title}</p>
-                  <p className="text-2xl font-bold text-suspect-text group-hover:text-suspect-primary transition-colors duration-300">
+                  <div className="text-2xl font-bold text-suspect-text group-hover:text-suspect-primary transition-colors duration-300">
                     {loadingStats ? (
                       <LoadingDots size="sm" />
                     ) : (
                       <span className="animate-fade-in">{card.value}</span>
                     )}
-                  </p>
+                  </div>
                 </div>
               </div>
             </div>
