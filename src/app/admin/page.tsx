@@ -200,16 +200,16 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-suspect-body">
       {/* Header */}
-      <header className="bg-suspect-header border-b border-suspect-gray-700">
+      <header className="bg-suspect-header border-b border-suspect-gray-700 animate-slide-up">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <div className="flex items-center">
-              <Link href="/" className="text-2xl font-bold text-suspect-text">
+            <div className="flex items-center animate-fade-in">
+              <Link href="/" className="text-2xl font-bold text-suspect-text hover:text-suspect-primary transition-colors duration-300">
                 SuspectCheats
               </Link>
-              <span className="ml-2 text-suspect-gray-400">Admin Panel</span>
+              <span className="ml-2 text-suspect-gray-400 animate-fade-in stagger-1">Admin Panel</span>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4 animate-fade-in stagger-2">
               <span className="text-suspect-gray-400">Welcome, {streamer?.username || user?.email || 'Admin'}</span>
               <button onClick={handleLogout} className="btn-secondary">Logout</button>
             </div>
@@ -217,11 +217,11 @@ export default function AdminDashboard() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 page-container">
         {/* Page Title */}
-        <div className="mb-8">
+        <div className="mb-8 animate-fade-in-up">
           <h1 className="text-3xl font-bold text-suspect-text">Dashboard</h1>
-          <p className="text-suspect-gray-400 mt-2">
+          <p className="text-suspect-gray-400 mt-2 animate-slide-up stagger-1">
             Overview of your streamer management platform
           </p>
         </div>
@@ -231,20 +231,19 @@ export default function AdminDashboard() {
           {statCards.map((card, index) => (
             <div 
               key={index} 
-              className="card p-6 hover:scale-105 transition-all duration-300 hover:shadow-lg hover:shadow-suspect-primary/10 group cursor-pointer"
-              style={{ animationDelay: `${index * 100}ms` }}
+              className={`stat-card animate-scale-in stagger-${Math.min(index + 1, 6)} group hover:shadow-lg hover:shadow-suspect-primary/20`}
             >
               <div className="flex items-center">
-                <div className={`w-12 h-12 ${card.color} rounded-lg flex items-center justify-center text-white text-xl mr-4 group-hover:scale-110 transition-transform duration-300`}>
+                <div className={`w-12 h-12 ${card.color} rounded-lg flex items-center justify-center text-white text-xl mr-4 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
                   {card.icon}
                 </div>
                 <div>
-                  <p className="text-suspect-gray-400 text-sm">{card.title}</p>
+                  <p className="text-suspect-gray-400 text-sm group-hover:text-suspect-gray-300 transition-colors duration-300">{card.title}</p>
                   <p className="text-2xl font-bold text-suspect-text group-hover:text-suspect-primary transition-colors duration-300">
                     {loadingStats ? (
-                      <span className="animate-pulse">...</span>
+                      <span className="animate-shimmer">...</span>
                     ) : (
-                      <span className="animate-in fade-in duration-500">{card.value}</span>
+                      <span className="animate-fade-in">{card.value}</span>
                     )}
                   </p>
                 </div>
@@ -254,18 +253,17 @@ export default function AdminDashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div className="mb-8">
+        <div className="mb-8 animate-fade-in-up stagger-3">
           <h2 className="text-xl font-semibold text-suspect-text mb-4">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {quickActions.map((action, index) => (
               <Link 
                 key={index}
                 href={action.href}
-                className="card p-6 hover:bg-suspect-gray-800 hover:scale-105 hover:shadow-lg hover:shadow-suspect-primary/10 transition-all duration-300 group"
-                style={{ animationDelay: `${(index + 3) * 100}ms` }}
+                className={`quick-action-card animate-scale-in stagger-${Math.min(index + 4, 6)} group hover:shadow-lg hover:shadow-suspect-primary/20`}
               >
                 <div className="flex items-start">
-                  <div className="text-2xl mr-3 group-hover:scale-110 transition-transform duration-300">{action.icon}</div>
+                  <div className="text-2xl mr-3 group-hover:scale-110 group-hover:bounce transition-all duration-300">{action.icon}</div>
                   <div>
                     <h3 className="text-lg font-medium text-suspect-text mb-1 group-hover:text-suspect-primary transition-colors duration-300">
                       {action.title}
@@ -281,18 +279,22 @@ export default function AdminDashboard() {
         </div>
 
         {/* Recent Activity */}
-        <div className="card p-6">
+        <div className="card p-6 animate-fade-in-up stagger-6 hover:shadow-lg hover:shadow-suspect-gray-700/30 transition-all duration-300">
           <h2 className="text-xl font-semibold text-suspect-text mb-4">Recent Stream Activity</h2>
           {loadingActivity ? (
-            <div className="text-center text-suspect-gray-400 py-8">Loading activity...</div>
+            <div className="text-center text-suspect-gray-400 py-8 animate-pulse">Loading activity...</div>
           ) : recentActivity.length === 0 ? (
-            <div className="text-center text-suspect-gray-400 py-8">No recent activity</div>
+            <div className="text-center text-suspect-gray-400 py-8 animate-fade-in">No recent activity</div>
           ) : (
             <div className="space-y-4">
-              {recentActivity.map((activity) => (
-                <div key={activity.id} className="flex items-center justify-between py-3 border-b border-suspect-gray-700 last:border-b-0">
+              {recentActivity.map((activity, index) => (
+                <div 
+                  key={activity.id} 
+                  className="flex items-center justify-between py-3 border-b border-suspect-gray-700 last:border-b-0 hover:bg-suspect-gray-800/30 rounded-lg px-2 transition-all duration-200 animate-slide-up"
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
                   <div className="flex items-center">
-                    <div className={`w-2 h-2 ${activity.color} rounded-full mr-3`}></div>
+                    <div className={`w-2 h-2 ${activity.color} rounded-full mr-3 animate-pulse`}></div>
                     <span className="text-suspect-text">{activity.message}</span>
                   </div>
                   <span className="text-suspect-gray-400 text-sm">{formatTimestamp(activity.timestamp)}</span>

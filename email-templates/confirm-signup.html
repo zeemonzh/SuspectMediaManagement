@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirm Your SuspectCheats Account</title>
+    <style>
+        /* Reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #ffffff;
+            background-color: #0b0c10;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #14151a;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+        
+        .header {
+            background-color: #14151a;
+            padding: 40px 20px;
+            text-align: center;
+            border-bottom: 1px solid #334155;
+        }
+        
+        .logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            font-size: 42px;
+        }
+        
+        .logo img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: contain;
+            border: 2px solid rgba(233, 33, 61, 0.2);
+            box-shadow: 0 0 20px rgba(233, 33, 61, 0.3);
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .logo::before {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(233, 33, 61, 0.3), rgba(220, 38, 38, 0.2), rgba(239, 68, 68, 0.3));
+            filter: blur(6px);
+            opacity: 0.7;
+            animation: pulse 3s ease-in-out infinite;
+            z-index: 1;
+        }
+        
+        .header h1 {
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .header p {
+            color: #94a3b8;
+            font-size: 16px;
+        }
+        
+        .content {
+            padding: 40px 30px;
+            background-color: #14151a;
+        }
+        
+        .welcome-text {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #ffffff;
+        }
+        
+        .description {
+            font-size: 16px;
+            color: #94a3b8;
+            margin-bottom: 32px;
+            line-height: 1.6;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background-color: #e9213d;
+            color: white !important;
+            text-decoration: none;
+            padding: 16px 32px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            text-align: center;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
+        
+        .cta-button:hover {
+            background-color: #dc2626;
+            transform: translateY(-1px) scale(1.05);
+            box-shadow: 0 8px 15px -3px rgba(233, 33, 61, 0.3);
+        }
+        
+        .divider {
+            height: 1px;
+            background-color: #334155;
+            margin: 32px 0;
+        }
+        
+        .alternative-link {
+            background-color: #181a20;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid #334155;
+        }
+        
+        .alternative-link p {
+            color: #94a3b8;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .alternative-link a {
+            color: #e9213d;
+            text-decoration: none;
+            word-break: break-all;
+            font-size: 14px;
+        }
+        
+        .footer {
+            background-color: #0b0c10;
+            padding: 30px;
+            text-align: center;
+            border-top: 1px solid #334155;
+        }
+        
+        .footer p {
+            color: #64748b;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .footer a {
+            color: #e9213d;
+            text-decoration: none;
+        }
+        
+        .security-note {
+            background-color: #181a20;
+            border-left: 4px solid #e9213d;
+            padding: 16px 20px;
+            margin: 24px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .security-note p {
+            color: #cbd5e1;
+            font-size: 14px;
+            margin: 0;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                margin: 0;
+                border-radius: 0;
+            }
+            
+            .content {
+                padding: 30px 20px;
+            }
+            
+            .header {
+                padding: 30px 20px;
+            }
+            
+            .header h1 {
+                font-size: 24px;
+            }
+            
+            .cta-button {
+                display: block;
+                width: 100%;
+                padding: 18px;
+            }
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 0.6;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.8;
+                transform: scale(1.05);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div style="background-color: #0b0c10; padding: 20px 0; min-height: 100vh;">
+        <div class="container">
+            <!-- Header -->
+            <div class="header">
+                <div class="logo">
+                    🚨
+                </div>
+                <h1>SuspectCheats</h1>
+                <p>Welcome to the platform</p>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="content">
+                <h2 class="welcome-text">Confirm your account</h2>
+                
+                <p class="description">
+                    Thanks for signing up! We're excited to have you on board. To complete your registration and start using SuspectCheats, please confirm your email address by clicking the button below.
+                </p>
+                
+                <div style="text-align: center;">
+                    <a href="{{ .ConfirmationURL }}" class="cta-button">
+                        Confirm Email Address
+                    </a>
+                </div>
+                
+                <div class="security-note">
+                    <p>
+                        <strong>Security Notice:</strong> This link will expire in 24 hours for your security. If you didn't create an account with SuspectCheats, you can safely ignore this email.
+                    </p>
+                </div>
+                
+                <div class="divider"></div>
+                
+                <div class="alternative-link">
+                    <p><strong>Having trouble with the button?</strong></p>
+                    <p>Copy and paste this link into your browser:</p>
+                    <a href="{{ .ConfirmationURL }}">{{ .ConfirmationURL }}</a>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="footer">
+                <p><strong>SuspectCheats Management Platform</strong></p>
+                <p>This email was sent to confirm your account registration.</p>
+                <p>
+                    Need help? Contact us at 
+                    <a href="mailto:support@suspectcheats.com">support@suspectcheats.com</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

@@ -746,7 +746,7 @@ export default function AdminAnalytics() {
                 </div>
                 <StreamerGoalsTable allStreamers={allStreamers} />
               </div>
-              <div className="bg-suspect-gray-800 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+              <div className="bg-suspect-body px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-suspect-gray-700">
                 <button
                   onClick={() => setShowGoalsOverview(false)}
                   className="btn-secondary w-full sm:w-auto"

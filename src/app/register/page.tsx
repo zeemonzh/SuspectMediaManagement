@@ -1,10 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useAuth } from '@/contexts/AuthContext'
+
+interface SecuritySettings {
+  session_timeout_minutes: number
+  min_password_length: number
+  require_2fa: boolean
+  max_login_attempts: number
+  account_lockout_duration_minutes: number
+}
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('')
@@ -17,8 +25,33 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [securitySettings, setSecuritySettings] = useState<SecuritySettings>({
+    session_timeout_minutes: 480,
+    min_password_length: 8,
+    require_2fa: false,
+    max_login_attempts: 5,
+    account_lockout_duration_minutes: 30
+  })
   const { signUp } = useAuth()
   const router = useRouter()
+
+  // Fetch security settings on component mount
+  useEffect(() => {
+    const fetchSecuritySettings = async () => {
+      try {
+        const response = await fetch('/api/admin/security-settings')
+        if (response.ok) {
+          const settings = await response.json()
+          setSecuritySettings(settings)
+        }
+      } catch (error) {
+        console.error('Error fetching security settings:', error)
+        // Use default settings if fetch fails
+      }
+    }
+
+    fetchSecuritySettings()
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -31,8 +64,8 @@ export default function RegisterPage() {
       return
     }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters')
+    if (password.length < securitySettings.min_password_length) {
+      setError(`Password must be at least ${securitySettings.min_password_length} characters`)
       setLoading(false)
       return
     }

@@ -35,7 +35,7 @@ export async function PATCH(
   }
 }
 
-// DELETE - Delete streamer
+// DELETE - Delete user (streamer or admin)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -43,20 +43,37 @@ export async function DELETE(
   try {
     const { id } = params
 
+    // First get the user to see what we're deleting
+    const { data: user, error: getUserError } = await supabase
+      .from('streamers')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (getUserError || !user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      )
+    }
+
+    // Delete the user (both streamers and admins)
     const { error } = await supabase
       .from('streamers')
       .delete()
       .eq('id', id)
-      .eq('role', 'streamer')
 
     if (error) throw error
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ 
+      success: true, 
+      message: `${user.role} "${user.username}" deleted successfully` 
+    })
   } catch (error) {
-    console.error('Error deleting streamer:', error)
+    console.error('Error deleting user:', error)
     return NextResponse.json(
-      { error: 'Failed to delete streamer' },
+      { error: 'Failed to delete user' },
       { status: 500 }
     )
   }
-} 
+}

@@ -101,13 +101,13 @@ export default function AdminSettings() {
 
   const fetchStreamers = async () => {
     try {
-      const response = await fetch('/api/streamers')
+      const response = await fetch('/api/admin/users')
       if (response.ok) {
         const data = await response.json()
         setStreamers(data)
       }
     } catch (error) {
-      console.error('Error fetching streamers:', error)
+      console.error('Error fetching users:', error)
     }
   }
 
@@ -483,6 +483,7 @@ export default function AdminSettings() {
                   <thead>
                     <tr className="border-b border-suspect-gray-700">
                       <th className="text-left text-suspect-gray-400 py-3">Username</th>
+                      <th className="text-left text-suspect-gray-400 py-3">Role</th>
                       <th className="text-left text-suspect-gray-400 py-3">Email</th>
                       <th className="text-left text-suspect-gray-400 py-3">TikTok</th>
                       <th className="text-left text-suspect-gray-400 py-3">Status</th>
@@ -496,11 +497,20 @@ export default function AdminSettings() {
                         <td className="text-suspect-text py-4 font-medium">
                           {streamer.username}
                         </td>
+                        <td className="py-4">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            streamer.role === 'admin' 
+                              ? 'bg-red-500/20 text-red-400' 
+                              : 'bg-blue-500/20 text-blue-400'
+                          }`}>
+                            {streamer.role === 'admin' ? 'Admin' : 'Streamer'}
+                          </span>
+                        </td>
                         <td className="text-suspect-gray-400 py-4">
                           {streamer.email}
                         </td>
                         <td className="text-suspect-text py-4">
-                          {streamer.tiktok_username}
+                          {streamer.tiktok_username === 'N/A' ? '-' : streamer.tiktok_username}
                         </td>
                         <td className="py-4">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
