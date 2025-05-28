@@ -505,14 +505,14 @@ export default function AdminProductKeys() {
                 <h2 className="text-xl font-semibold text-suspect-text mb-4">Key Requests</h2>
                 <div className="overflow-x-auto">
                   <div className="max-h-96 overflow-y-auto border border-suspect-gray-700 rounded-lg">
-                    <table className="w-full min-w-[700px]">
+                    <table className="w-full">
                       <thead className="sticky top-0 bg-suspect-header z-10">
                         <tr className="border-b border-suspect-gray-700">
-                          <th className="text-left text-suspect-gray-400 py-3 px-4 min-w-[120px]">Streamer</th>
-                          <th className="text-left text-suspect-gray-400 py-3 px-4 min-w-[180px]">Product Name</th>
-                          <th className="text-left text-suspect-gray-400 py-3 px-4 min-w-[100px]">Status</th>
-                          <th className="text-left text-suspect-gray-400 py-3 px-4 min-w-[100px]">Date</th>
-                          <th className="text-left text-suspect-gray-400 py-3 px-4 min-w-[120px]">Actions</th>
+                          <th className="text-left text-suspect-gray-400 py-3 px-4">Streamer</th>
+                          <th className="text-left text-suspect-gray-400 py-3 px-4">Product Name</th>
+                          <th className="text-left text-suspect-gray-400 py-3 px-4">Status</th>
+                          <th className="text-left text-suspect-gray-400 py-3 px-4">Date</th>
+                          <th className="text-left text-suspect-gray-400 py-3 px-4">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -527,7 +527,7 @@ export default function AdminProductKeys() {
                               </td>
                               <td className="text-suspect-text py-4 px-4">
                                 <div>
-                                  <div className="font-medium">{request.reason}</div>
+                                  <div>{request.reason}</div>
                                   {keyInfo.hasMatchingCategory && request.status === 'pending' && (
                                     <div className="text-xs text-suspect-gray-400 mt-1">
                                       {keyInfo.categoryKeys > 0 ? (
@@ -558,12 +558,12 @@ export default function AdminProductKeys() {
                                   {request.status}
                                 </span>
                               </td>
-                              <td className="text-suspect-gray-400 py-4 px-4 text-sm">
+                              <td className="text-suspect-gray-400 py-4 px-4">
                                 {new Date(request.created_at).toLocaleDateString()}
                               </td>
                               <td className="py-4 px-4">
                                 {request.status === 'pending' ? (
-                                  <div className="flex flex-col sm:flex-row sm:space-x-2 space-y-1 sm:space-y-0">
+                                  <div className="flex space-x-2">
                                     <button
                                       onClick={() => {
                                         if (!canApprove) {
@@ -572,21 +572,21 @@ export default function AdminProductKeys() {
                                         }
                                         handleRequestAction(request.id, 'approved', 'Request approved')
                                       }}
-                                      className={`text-sm px-2 py-1 rounded ${
+                                      className={`text-sm ${
                                         canApprove 
-                                          ? 'text-green-400 hover:text-green-300 hover:bg-green-500/10'
+                                          ? 'text-green-400 hover:text-green-300'
                                           : 'text-gray-500 cursor-not-allowed'
                                       }`}
                                       disabled={!canApprove}
                                       title={canApprove ? 'Approve request' : 'No available keys'}
                                     >
-                                      ✓ Approve {!canApprove && '⚠️'}
+                                      Approve {!canApprove && '⚠️'}
                                     </button>
                                     <button
                                       onClick={() => handleRequestAction(request.id, 'denied', 'Request denied')}
-                                      className="text-red-400 hover:text-red-300 hover:bg-red-500/10 text-sm px-2 py-1 rounded"
+                                      className="text-red-400 hover:text-red-300 text-sm"
                                     >
-                                      ✗ Deny
+                                      Deny
                                     </button>
                                   </div>
                                 ) : (
