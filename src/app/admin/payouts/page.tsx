@@ -152,14 +152,14 @@ export default function AdminPayouts() {
       <header className="bg-suspect-header border-b border-suspect-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <div className="flex items-center">
-              <Link href="/admin" className="text-2xl font-bold text-suspect-text">
+            <div className="flex items-center min-w-0 flex-1">
+              <Link href="/admin" className="text-xl sm:text-2xl font-bold text-suspect-text truncate">
                 SuspectCheats
               </Link>
-              <span className="ml-2 text-suspect-gray-400">/ Payouts</span>
+              <span className="hidden sm:block ml-2 text-suspect-gray-400">/ Payouts</span>
             </div>
-            <div className="flex items-center space-x-4">
-              <Link href="/admin" className="btn-secondary">
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <Link href="/admin" className="btn-secondary text-sm px-3 py-1 sm:px-4 sm:py-2">
                 Back to Dashboard
               </Link>
             </div>
