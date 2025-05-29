@@ -1,10 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import AlertDialog from '@/components/AlertDialog'
+import ConfirmDialog from '@/components/ConfirmDialog'
 
 interface Payout {
   id: string
@@ -32,6 +34,26 @@ export default function AdminPayouts() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'denied' | 'paid'>('all')
 
+  // Add state for alerts and confirmations
+  const [alertDialog, setAlertDialog] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    type: 'success' | 'error' | 'warning' | 'info'
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info'
+  })
+
+  const [paymentConfirmDialog, setPaymentConfirmDialog] = useState<{
+    isOpen: boolean
+    payout: Payout | null
+  }>({
+    isOpen: false,
+    payout: null
+  })
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -74,68 +96,39 @@ export default function AdminPayouts() {
   const totalPending = payouts.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0)
   const totalPaid = payouts.filter(p => p.status === 'paid' || p.status === 'approved').reduce((sum, p) => sum + p.amount, 0)
 
-  const handleStatusUpdate = async (payoutId: string, newStatus: 'pending' | 'approved' | 'denied' | 'paid') => {
+  const showAlert = (title: string, message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
+    setAlertDialog({ isOpen: true, title, message, type })
+  }
+
+  const handleStatusUpdate = async (payoutId: string, status: string) => {
     try {
-      const response = await fetch('/api/admin/payouts', {
+      const response = await fetch(`/api/payouts/${payoutId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          payoutId,
-          status: newStatus,
-          admin_notes: `Status changed to ${newStatus} by admin`
-        })
+        body: JSON.stringify({ status })
       })
 
       if (response.ok) {
-        // Refresh the payouts list
-        fetchPayouts()
+        showAlert('Success', 'Payout status updated successfully!', 'success')
+        fetchPayouts() // Refresh the list
       } else {
-        alert('Failed to update payout status')
+        const error = await response.json()
+        showAlert('Error', error.error || 'Error updating payout status', 'error')
       }
     } catch (error) {
       console.error('Error updating payout status:', error)
-      alert('Error updating payout status')
+      showAlert('Error', 'Error updating payout status', 'error')
     }
   }
 
-
-
   const handlePayPalPayment = (payout: Payout) => {
-    if (!payout.paypal_username) {
-      alert('No PayPal username provided for this payout')
-      return
-    }
-
-    // Create PayPal payment URL using PayPal's correct format
-    let paypalUrl: string
-    let instructions: string
-    
-    if (payout.paypal_username.startsWith('@') || !payout.paypal_username.includes('@')) {
-      // It's a PayPal.me username - this works with direct linking
-      const username = payout.paypal_username.replace('@', '')
-      paypalUrl = `https://www.paypal.com/paypalme/${username}/${payout.amount}`
-      instructions = `PayPal.me link opened. The amount ($${payout.amount}) should be pre-filled.`
-    } else {
-      // It's an email - direct to PayPal's send money page (no pre-filling for security)
-      paypalUrl = 'https://www.paypal.com/myaccount/transfer/homepage'
-      instructions = `PayPal Send Money page opened. Please manually enter:\n• Recipient: ${payout.paypal_username}\n• Amount: $${payout.amount}\n• Note: Payout for ${payout.streamer_username}`
-    }
-    
-    // Show instructions before opening PayPal
-    alert(instructions)
-    
-    // Open PayPal in new tab
-    window.open(paypalUrl, '_blank', 'noopener,noreferrer')
-    
-    // Ask for confirmation after a delay
-    setTimeout(() => {
-      const confirmed = confirm(`Did you successfully send $${payout.amount} to ${payout.streamer_username} via PayPal?\n\nClick OK only after you've completed the payment.`)
-      if (confirmed) {
-        handleStatusUpdate(payout.id, 'paid')
-      }
-    }, 3000) // Give more time for PayPal to load and payment to process
+    window.open(`https://paypal.com/paypalme/${payout.paypal_username}/${payout.amount}`, '_blank')
+    setPaymentConfirmDialog({
+      isOpen: true,
+      payout
+    })
   }
 
   if (authLoading || loading) {
@@ -404,6 +397,35 @@ export default function AdminPayouts() {
           </div>
         </div>
       </div>
+
+      {/* Add AlertDialog */}
+      <AlertDialog
+        isOpen={alertDialog.isOpen}
+        onClose={() => setAlertDialog(prev => ({ ...prev, isOpen: false }))}
+        title={alertDialog.title}
+        message={alertDialog.message}
+        type={alertDialog.type}
+      />
+
+      {/* Add PaymentConfirmDialog */}
+      <ConfirmDialog
+        isOpen={paymentConfirmDialog.isOpen}
+        onClose={() => setPaymentConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={() => {
+          if (paymentConfirmDialog.payout) {
+            handleStatusUpdate(paymentConfirmDialog.payout.id, 'paid')
+          }
+          setPaymentConfirmDialog(prev => ({ ...prev, isOpen: false }))
+        }}
+        title="Confirm PayPal Payment"
+        message={paymentConfirmDialog.payout ? 
+          `Did you successfully send $${paymentConfirmDialog.payout.amount} to ${paymentConfirmDialog.payout.streamer_username} via PayPal?\n\nClick Confirm only after you've completed the payment.` 
+          : 'Confirm payment completion'
+        }
+        confirmText="Confirm Payment"
+        cancelText="Cancel"
+        type="warning"
+      />
     </div>
   )
 } 

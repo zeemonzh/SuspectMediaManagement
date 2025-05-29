@@ -1,8 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useAuth } from '@/contexts/AuthContext'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import AlertDialog from '@/components/AlertDialog'
+import ConfirmDialog from '@/components/ConfirmDialog'
 
 interface ProductKey {
   id: string
@@ -66,6 +69,29 @@ export default function AdminProductKeys() {
     requests?: boolean
     categories?: boolean
   }>({})
+
+  // Add state for alerts and confirmations
+  const [alertDialog, setAlertDialog] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    type: 'success' | 'error' | 'warning' | 'info'
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info'
+  })
+
+  const [deleteKeyDialog, setDeleteKeyDialog] = useState<{
+    isOpen: boolean
+    keyId: string
+    keyValue: string
+  }>({
+    isOpen: false,
+    keyId: '',
+    keyValue: ''
+  })
 
   useEffect(() => {
     fetchData()
@@ -279,11 +305,11 @@ export default function AdminProductKeys() {
     }
   }
 
-  const deleteKey = async (keyId: string, keyValue: string) => {
-    if (!confirm(`Are you sure you want to delete the key "${keyValue}"? This action cannot be undone.`)) {
-      return
-    }
+  const showAlert = (title: string, message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
+    setAlertDialog({ isOpen: true, title, message, type })
+  }
 
+  const deleteKey = async (keyId: string, keyValue: string) => {
     try {
       const response = await fetch('/api/product-keys', {
         method: 'DELETE',
@@ -300,14 +326,14 @@ export default function AdminProductKeys() {
         await fetchProductCategories() // Refresh categories to update key counts
         // Invalidate cache for both keys and categories tabs
         setDataCache(prev => ({ ...prev, keys: false, categories: false }))
-        alert('Key deleted successfully!')
+        showAlert('Success', 'Key deleted successfully!', 'success')
       } else {
         const error = await response.json()
-        alert(`Error: ${error.error}`)
+        showAlert('Error', `Error: ${error.error}`, 'error')
       }
     } catch (error) {
       console.error('Error deleting key:', error)
-      alert('Error deleting key')
+      showAlert('Error', 'Error deleting key', 'error')
     }
   }
 
@@ -668,7 +694,11 @@ export default function AdminProductKeys() {
                             </td>
                             <td className="py-4 px-4">
                               <button
-                                onClick={() => deleteKey(key.id, key.key)}
+                                onClick={() => setDeleteKeyDialog({
+                                  isOpen: true,
+                                  keyId: key.id,
+                                  keyValue: key.key
+                                })}
                                 className="text-red-400 hover:text-red-300 text-sm"
                               >
                                 Delete
@@ -877,6 +907,30 @@ export default function AdminProductKeys() {
           </div>
         </div>
       )}
+
+      {/* Add AlertDialog */}
+      <AlertDialog
+        isOpen={alertDialog.isOpen}
+        onClose={() => setAlertDialog(prev => ({ ...prev, isOpen: false }))}
+        title={alertDialog.title}
+        message={alertDialog.message}
+        type={alertDialog.type}
+      />
+
+      {/* Add DeleteKeyDialog */}
+      <ConfirmDialog
+        isOpen={deleteKeyDialog.isOpen}
+        onClose={() => setDeleteKeyDialog(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={() => {
+          deleteKey(deleteKeyDialog.keyId, deleteKeyDialog.keyValue)
+          setDeleteKeyDialog(prev => ({ ...prev, isOpen: false }))
+        }}
+        title="Delete Product Key"
+        message={`Are you sure you want to delete the key "${deleteKeyDialog.keyValue}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+      />
     </div>
   )
 } 

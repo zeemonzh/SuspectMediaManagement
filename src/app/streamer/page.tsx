@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import AlertDialog from '@/components/AlertDialog'
+import PromptDialog from '@/components/PromptDialog'
 
 interface StreamSession {
   id: string
@@ -61,6 +63,27 @@ export default function StreamerDashboard() {
   }[]>([])
   const [loadingStreams, setLoadingStreams] = useState(true)
   const [loadingKeys, setLoadingKeys] = useState(true)
+
+  // Add state for dialogs
+  const [alertDialog, setAlertDialog] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    type: 'success' | 'error' | 'warning' | 'info'
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info'
+  })
+
+  const [paypalDialog, setPaypalDialog] = useState<{
+    isOpen: boolean
+    sessionId: string
+  }>({
+    isOpen: false,
+    sessionId: ''
+  })
 
   useEffect(() => {
     if (!loading && (!user || streamer?.role !== 'streamer')) {
@@ -154,19 +177,18 @@ export default function StreamerDashboard() {
     }
   }
 
-  const requestPayout = async (sessionId: string) => {
-    // Ask for PayPal username
-    const paypalUsername = prompt(
-      'Please enter your PayPal username/email for payment:\n\n' +
-      'This will be used to send your payout directly via PayPal.',
-      streamer?.paypal_username || ''
-    )
-    
-    if (!paypalUsername?.trim()) {
-      alert('PayPal username is required to request payout')
-      return
-    }
+  const showAlert = (title: string, message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
+    setAlertDialog({ isOpen: true, title, message, type })
+  }
 
+  const requestPayout = async (sessionId: string) => {
+    setPaypalDialog({
+      isOpen: true,
+      sessionId
+    })
+  }
+
+  const handlePaypalSubmit = async (paypalUsername: string) => {
     try {
       const response = await fetch('/api/payout-requests', {
         method: 'POST',
@@ -175,20 +197,24 @@ export default function StreamerDashboard() {
         },
         body: JSON.stringify({
           streamer_id: streamer?.id,
-          stream_session_id: sessionId,
+          stream_session_id: paypalDialog.sessionId,
           paypal_username: paypalUsername.trim()
         })
       })
 
       if (response.ok) {
-        alert('Payout request submitted successfully!\nYou will receive payment at: ' + paypalUsername)
-        fetchStreamSessions() // Refresh the list
+        showAlert(
+          'Success',
+          'Payout request submitted successfully!\nYou will receive payment at: ' + paypalUsername,
+          'success'
+        )
+        fetchStreamSessions()
       } else {
         const error = await response.json()
-        alert(`Error: ${error.error}`)
+        showAlert('Error', error.error, 'error')
       }
     } catch (error) {
-      alert('Error submitting payout request')
+      showAlert('Error', 'Error submitting payout request', 'error')
     }
   }
 
@@ -199,12 +225,12 @@ export default function StreamerDashboard() {
 
   const handleKeyRequest = async () => {
     if (!selectedCategoryId.trim()) {
-      alert('Please select a category')
+      showAlert('Error', 'Please select a category', 'error')
       return
     }
 
     if (!streamer?.id) {
-      alert('Unable to identify streamer')
+      showAlert('Error', 'Unable to identify streamer', 'error')
       return
     }
 
@@ -222,17 +248,16 @@ export default function StreamerDashboard() {
 
       if (response.ok) {
         const categoryName = productCategories.find(c => c.id === selectedCategoryId)?.name || 'Unknown'
-        alert(`Key request submitted for: ${categoryName}`)
+        showAlert('Success', `Key request submitted for: ${categoryName}`, 'success')
         setSelectedCategoryId('')
-        // Refresh keys in case admin approves quickly
         fetchAssignedKeys()
       } else {
         const error = await response.json()
-        alert(`Error: ${error.error}`)
+        showAlert('Error', error.error, 'error')
       }
     } catch (error) {
       console.error('Error submitting key request:', error)
-      alert('Error submitting key request')
+      showAlert('Error', 'Error submitting key request', 'error')
     }
   }
 
@@ -584,6 +609,34 @@ export default function StreamerDashboard() {
           )}
         </div>
       </div>
+
+      {/* Alert Dialog */}
+      <AlertDialog
+        isOpen={alertDialog.isOpen}
+        onClose={() => setAlertDialog(prev => ({ ...prev, isOpen: false }))}
+        title={alertDialog.title}
+        message={alertDialog.message}
+        type={alertDialog.type}
+      />
+
+      {/* PayPal Input Dialog */}
+      <PromptDialog
+        isOpen={paypalDialog.isOpen}
+        onClose={() => setPaypalDialog(prev => ({ ...prev, isOpen: false }))}
+        onSubmit={handlePaypalSubmit}
+        title="Enter PayPal Details"
+        message="Please enter your PayPal username/email for payment. This will be used to send your payout directly via PayPal."
+        placeholder="PayPal username or email"
+        defaultValue={streamer?.paypal_username || ''}
+        submitText="Submit Request"
+        type="email"
+        validation={(value) => {
+          if (!value.trim()) return 'PayPal username is required'
+          if (!value.includes('@') && !value.startsWith('@')) {
+            return 'Please enter a valid PayPal email or username (starting with @)'
+          }
+        }}
+      />
     </div>
   )
 } 

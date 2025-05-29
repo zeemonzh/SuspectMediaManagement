@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import LoadingSpinner, { LoadingDots } from '@/components/LoadingSpinner'
+import AlertDialog from '@/components/AlertDialog'
+import ConfirmDialog from '@/components/ConfirmDialog'
 
 interface InvitationKey {
   id: string
@@ -64,6 +66,52 @@ export default function AdminSettings() {
     system?: boolean
     logs?: boolean
   }>({})
+
+  // Add state for delete confirmation dialog
+  const [deleteDialog, setDeleteDialog] = useState<{
+    isOpen: boolean
+    userId: string
+    username: string
+  }>({
+    isOpen: false,
+    userId: '',
+    username: ''
+  })
+
+  // Add state for alerts
+  const [alertDialog, setAlertDialog] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    type: 'success' | 'error' | 'warning' | 'info'
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info'
+  })
+
+  // Add state for key deletion dialog
+  const [deleteKeyDialog, setDeleteKeyDialog] = useState<{
+    isOpen: boolean
+    keyId: string
+    keyCode: string
+    usedBy?: string
+  }>({
+    isOpen: false,
+    keyId: '',
+    keyCode: '',
+    usedBy: undefined
+  })
+
+  // Add state for clipboard alert
+  const [clipboardAlert, setClipboardAlert] = useState<{
+    isOpen: boolean
+    text: string
+  }>({
+    isOpen: false,
+    text: ''
+  })
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -191,6 +239,11 @@ export default function AdminSettings() {
     }
   }
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+    showAlert('Success', 'Copied to clipboard!', 'success')
+  }
+
   const generateInvitationKeys = async () => {
     try {
       const response = await fetch('/api/admin/invitation-keys', {
@@ -207,25 +260,17 @@ export default function AdminSettings() {
         await fetchInvitationKeys()
         // Invalidate cache for invitations tab
         setDataCache(prev => ({ ...prev, invitations: false }))
-        alert(`${newKeyCount} invitation key(s) generated successfully!`)
+        showAlert('Success', `${newKeyCount} invitation key(s) generated successfully!`, 'success')
       } else {
-        alert('Error generating invitation keys')
+        showAlert('Error', 'Error generating invitation keys', 'error')
       }
     } catch (error) {
       console.error('Error generating keys:', error)
-      alert('Error generating invitation keys')
+      showAlert('Error', 'Error generating invitation keys', 'error')
     }
   }
 
   const deleteKey = async (keyId: string, keyCode: string, usedBy?: string) => {
-    const confirmMessage = usedBy 
-      ? `Are you sure you want to delete invitation key "${keyCode}"?\n\nThis will also DELETE the admin account that used this key: ${usedBy}\n\nThis action cannot be undone!`
-      : `Are you sure you want to delete invitation key "${keyCode}"?\n\nThis action cannot be undone!`
-    
-    if (!confirm(confirmMessage)) {
-      return
-    }
-
     try {
       const response = await fetch(`/api/admin/invitation-keys/${keyId}`, {
         method: 'DELETE'
@@ -236,21 +281,17 @@ export default function AdminSettings() {
         await fetchInvitationKeys()
         // Invalidate cache
         setDataCache(prev => ({ ...prev, invitations: false, users: false }))
-        alert(result.message || 'Invitation key deleted successfully!')
+        showAlert('Success', result.message || 'Invitation key deleted successfully!', 'success')
       } else {
-        alert('Error deleting invitation key')
+        showAlert('Error', 'Error deleting invitation key', 'error')
       }
     } catch (error) {
       console.error('Error deleting key:', error)
-      alert('Error deleting invitation key')
+      showAlert('Error', 'Error deleting invitation key', 'error')
     }
   }
 
   const deleteUser = async (userId: string, username: string) => {
-    if (!confirm(`Are you sure you want to delete the user "${username}"? This action cannot be undone and will permanently remove all their data including stream sessions, payouts, and account information.`)) {
-      return
-    }
-
     try {
       const response = await fetch(`/api/streamers/${userId}`, {
         method: 'DELETE'
@@ -260,13 +301,13 @@ export default function AdminSettings() {
         await fetchStreamers() // Refresh the list
         // Invalidate cache
         setDataCache(prev => ({ ...prev, users: false, logs: false }))
-        alert(`User "${username}" has been deleted successfully.`)
+        showAlert('Success', `User "${username}" has been deleted successfully.`, 'success')
       } else {
-        alert('Error deleting user')
+        showAlert('Error', 'Error deleting user', 'error')
       }
     } catch (error) {
       console.error('Error deleting user:', error)
-      alert('Error deleting user')
+      showAlert('Error', 'Error deleting user', 'error')
     }
   }
 
@@ -281,14 +322,14 @@ export default function AdminSettings() {
       })
 
       if (response.ok) {
-        alert('Security settings saved successfully!')
+        showAlert('Success', 'Security settings saved successfully!', 'success')
       } else {
         const error = await response.json()
-        alert(`Error saving settings: ${error.error}`)
+        showAlert('Error', `Error saving settings: ${error.error}`, 'error')
       }
     } catch (error) {
       console.error('Error saving security settings:', error)
-      alert('Error saving security settings')
+      showAlert('Error', 'Error saving security settings', 'error')
     }
   }
 
@@ -354,17 +395,17 @@ export default function AdminSettings() {
     }
   }
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
-    alert('Copied to clipboard!')
-  }
-
   // Effect to refetch activity logs when category changes
   useEffect(() => {
     if (isAdmin && activeTab === 'logs') {
       fetchActivityLogs()
     }
   }, [activityCategory])
+
+  // Add showAlert function
+  const showAlert = (title: string, message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
+    setAlertDialog({ isOpen: true, title, message, type })
+  }
 
   if (authLoading || loading) {
     return <LoadingSpinner fullScreen text="Loading settings" />
@@ -493,7 +534,12 @@ export default function AdminSettings() {
                           </td>
                           <td className="py-4 px-4">
                             <button
-                              onClick={() => deleteKey(key.id, key.code, key.used_by)}
+                              onClick={() => setDeleteKeyDialog({
+                                isOpen: true,
+                                keyId: key.id,
+                                keyCode: key.code,
+                                usedBy: key.used_by
+                              })}
                               className="text-red-400 hover:text-red-300 text-sm"
                             >
                               Delete
@@ -582,7 +628,11 @@ export default function AdminSettings() {
                           <td className="py-4 px-4">
                             <div className="flex space-x-2">
                               <button
-                                onClick={() => deleteUser(streamer.id, streamer.username)}
+                                onClick={() => setDeleteDialog({
+                                  isOpen: true,
+                                  userId: streamer.id,
+                                  username: streamer.username
+                                })}
                                 className="text-red-400 hover:text-red-300 text-sm"
                               >
                                 Delete
@@ -878,6 +928,47 @@ export default function AdminSettings() {
           </div>
         </div>
       )}
+
+      {/* Add AlertDialog component */}
+      <AlertDialog
+        isOpen={alertDialog.isOpen}
+        onClose={() => setAlertDialog(prev => ({ ...prev, isOpen: false }))}
+        title={alertDialog.title}
+        message={alertDialog.message}
+        type={alertDialog.type}
+      />
+
+      <ConfirmDialog
+        isOpen={deleteDialog.isOpen}
+        onClose={() => setDeleteDialog(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={() => {
+          deleteUser(deleteDialog.userId, deleteDialog.username)
+          setDeleteDialog(prev => ({ ...prev, isOpen: false }))
+        }}
+        title="Delete User"
+        message={`Are you sure you want to delete the user "${deleteDialog.username}"? This action cannot be undone and will permanently remove all their data including stream sessions, payouts, and account information.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+      />
+
+      {/* Add another ConfirmDialog for key deletion */}
+      <ConfirmDialog
+        isOpen={deleteKeyDialog.isOpen}
+        onClose={() => setDeleteKeyDialog(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={() => {
+          deleteKey(deleteKeyDialog.keyId, deleteKeyDialog.keyCode, deleteKeyDialog.usedBy)
+          setDeleteKeyDialog(prev => ({ ...prev, isOpen: false }))
+        }}
+        title="Delete Invitation Key"
+        message={deleteKeyDialog.usedBy 
+          ? `Are you sure you want to delete invitation key "${deleteKeyDialog.keyCode}"?\n\nThis will also DELETE the admin account that used this key: ${deleteKeyDialog.usedBy}\n\nThis action cannot be undone!`
+          : `Are you sure you want to delete invitation key "${deleteKeyDialog.keyCode}"?\n\nThis action cannot be undone!`
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+      />
     </div>
   )
 } 
