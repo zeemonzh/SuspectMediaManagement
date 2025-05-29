@@ -124,7 +124,7 @@ export default function AdminPayouts() {
   }
 
   const handlePayPalPayment = (payout: Payout) => {
-    window.open(`https://paypal.com/paypalme/${payout.paypal_username}/${payout.amount}`, '_blank')
+    window.open(`https://paypal.me/${payout.paypal_username}/${payout.amount}`, '_blank')
     setPaymentConfirmDialog({
       isOpen: true,
       payout

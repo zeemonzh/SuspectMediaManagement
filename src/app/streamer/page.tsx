@@ -625,16 +625,13 @@ export default function StreamerDashboard() {
         onClose={() => setPaypalDialog(prev => ({ ...prev, isOpen: false }))}
         onSubmit={handlePaypalSubmit}
         title="Enter PayPal Details"
-        message="Please enter your PayPal username/email for payment. This will be used to send your payout directly via PayPal."
-        placeholder="PayPal username or email"
+        message="Please enter your PayPal username for payment. This will be used to send your payout directly via PayPal."
+        placeholder="PayPal username"
         defaultValue={streamer?.paypal_username || ''}
         submitText="Submit Request"
-        type="email"
+        type="text"
         validation={(value) => {
           if (!value.trim()) return 'PayPal username is required'
-          if (!value.includes('@') && !value.startsWith('@')) {
-            return 'Please enter a valid PayPal email or username (starting with @)'
-          }
         }}
       />
     </div>
