@@ -85,8 +85,12 @@ export default function StreamerDashboard() {
         clearInterval(streamerInterval)
       }
     }
-    fetchProductCategories()
   }, [streamer])
+
+  // Separate effect for product categories
+  useEffect(() => {
+    fetchProductCategories()
+  }, []) // Empty dependency array means this runs once on mount
 
   const fetchProductCategories = async () => {
     try {
