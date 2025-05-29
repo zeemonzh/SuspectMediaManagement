@@ -119,7 +119,8 @@ class StreamTracker {
         currentLikes: 0,
         peakViewers: 0,
         totalViewers: 0,
-        uniqueViewers: new Set()
+        lastViewerCount: 0, // Track last viewer count to calculate difference
+        lastUpdateTime: new Date() // Track time of last update
       });
 
       console.log(`📺 Started session for streamer ${streamerId}`);
@@ -132,8 +133,21 @@ class StreamTracker {
     const session = this.streamSessions.get(streamerId);
     if (!session) return;
 
+    const now = new Date();
+    const timeDiffSeconds = (now - session.lastUpdateTime) / 1000;
+    
+    // Only update if we have a previous count to compare with
+    if (session.lastViewerCount > 0) {
+      // Calculate average viewers between last update and now
+      const avgViewersInPeriod = (session.lastViewerCount + viewerCount) / 2;
+      // Add to total viewers weighted by time period
+      session.totalViewers += Math.round(avgViewersInPeriod * timeDiffSeconds);
+    }
+
     session.viewerCounts.push(viewerCount);
     session.peakViewers = Math.max(session.peakViewers, viewerCount);
+    session.lastViewerCount = viewerCount;
+    session.lastUpdateTime = now;
     
     // Update average viewers immediately
     const avgViewers = Math.round(
@@ -146,7 +160,7 @@ class StreamTracker {
         .update({
           peak_viewers: session.peakViewers,
           average_viewers: avgViewers,
-          total_viewers: viewerCount // Use current viewer count as total
+          total_viewers: session.totalViewers // This is now viewer-seconds
         })
         .eq('id', session.sessionId);
     } catch (error) {
