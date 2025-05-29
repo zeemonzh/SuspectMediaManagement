@@ -35,6 +35,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (session?.user) {
           await fetchStreamerData(session.user.id)
+          
+          // If user just signed in and has confirmed email, activate their account
+          if (event === 'SIGNED_IN' && session.user.email_confirmed_at) {
+            await activateAccountIfNeeded(session.user.id)
+          }
         } else {
           setStreamer(null)
         }
@@ -62,6 +67,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Error fetching streamer data:', error)
       setStreamer(null)
+    }
+  }
+
+  const activateAccountIfNeeded = async (userId: string) => {
+    try {
+      // Check if account needs activation
+      const response = await fetch(`/api/auth/streamer?user_id=${userId}`)
+      const result = await response.json()
+      
+      if (result.streamer && !result.streamer.is_active) {
+        // Activate the account
+        await fetch('/api/auth/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId })
+        })
+        
+        // Refresh streamer data
+        await fetchStreamerData(userId)
+      }
+    } catch (error) {
+      console.error('Error checking/activating account:', error)
     }
   }
 
@@ -111,15 +138,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       console.log('Registration successful:', result.message)
 
-      // Now sign in the user
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
+      // Only try to sign in if email confirmation is not required
+      if (!result.emailConfirmationRequired) {
+        // Now sign in the user
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
 
-      if (signInError) {
-        console.error('Sign in after registration failed:', signInError)
-        return { error: 'Account created but sign in failed: ' + signInError.message }
+        if (signInError) {
+          console.error('Sign in after registration failed:', signInError)
+          return { error: 'Account created but sign in failed: ' + signInError.message }
+        }
       }
 
       return {}

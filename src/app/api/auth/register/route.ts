@@ -52,11 +52,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create auth user
+    // Create auth user - use normal signup flow to send confirmation email
     const { data, error } = await supabase.auth.admin.createUser({
       email,
       password,
-      email_confirm: true // Auto-confirm email
+      email_confirm: false, // This will trigger the confirmation email
+      user_metadata: {
+        role: role,
+        username: username,
+        tiktok_username: role === 'streamer' ? (tiktokUsername || '') : 'N/A'
+      }
     })
 
     if (error) {
@@ -75,6 +80,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create streamer record using service role (bypasses RLS)
+    // We'll create this even if email isn't confirmed yet
     const { error: streamerError } = await supabase
       .from('streamers')
       .insert({
@@ -83,7 +89,7 @@ export async function POST(request: NextRequest) {
         tiktok_username: role === 'streamer' ? (tiktokUsername || '') : 'N/A',
         email: email,
         role: role,
-        is_active: true
+        is_active: false // Set to false until email is confirmed
       })
 
     if (streamerError) {
@@ -116,8 +122,9 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ 
-      message: 'User created successfully',
-      user: { id: data.user.id, email: data.user.email }
+      message: 'User created successfully. Please check your email to confirm your account.',
+      user: { id: data.user.id, email: data.user.email },
+      emailConfirmationRequired: true
     }, { status: 201 })
 
   } catch (error) {
