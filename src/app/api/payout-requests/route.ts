@@ -87,13 +87,12 @@ export async function POST(request: NextRequest) {
     console.log('Found stream session:', session)
 
     // Check if payout already requested for this session
-    const { data: existingRequest, error: existingError } = await supabase
+    const { data: existingRequests, error: existingError } = await supabase
       .from('payout_requests')
       .select('id')
       .eq('stream_session_id', stream_session_id)
-      .single()
 
-    if (existingError && !existingError.message.includes('No rows found')) {
+    if (existingError) {
       console.error('Error checking existing request:', existingError)
       return NextResponse.json(
         { error: 'Failed to check existing payout request' },
@@ -101,7 +100,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (existingRequest) {
+    if (existingRequests && existingRequests.length > 0) {
       return NextResponse.json(
         { error: 'Payout already requested for this stream session' },
         { status: 400 }
