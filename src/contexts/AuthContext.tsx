@@ -86,85 +86,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('Starting signup for:', email, 'as role:', role, 'with username:', username)
       
-      // Validate invitation key for admin accounts
-      if (role === 'admin') {
-        if (!invitationKey) {
-          return { error: 'Invitation key is required for admin accounts' }
-        }
+      // Use the registration API endpoint instead of direct database insertion
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          role,
+          username,
+          invitationKey,
+          tiktokUsername
+        })
+      })
 
-        console.log('Validating admin invitation key:', invitationKey)
-        
-        // Check if invitation key is valid and unused
-        const { data: invitation, error: inviteError } = await supabase
-          .from('admin_invitations')
-          .select('*')
-          .eq('invitation_key', invitationKey)
-          .eq('is_used', false)
-          .single()
+      const result = await response.json()
 
-        if (inviteError || !invitation) {
-          console.error('Invalid invitation key:', inviteError)
-          return { error: 'Invalid or expired invitation key' }
-        }
-
-        // Check if key has expired
-        if (invitation.expires_at && new Date(invitation.expires_at) < new Date()) {
-          return { error: 'Invitation key has expired' }
-        }
-
-        console.log('Invitation key validated successfully')
+      if (!response.ok) {
+        console.error('Registration API error:', result.error)
+        return { error: result.error }
       }
 
-      const { data, error } = await supabase.auth.signUp({
+      console.log('Registration successful:', result.message)
+
+      // Now sign in the user
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
-      if (error) {
-        console.error('Signup auth error:', error)
-        return { error: error.message }
-      }
-
-      console.log('Auth signup successful, user:', data.user?.id)
-
-      // Create streamer record for both roles
-      if (data.user) {
-        console.log('Creating database record...')
-        const { error: streamerError } = await supabase
-          .from('streamers')
-          .insert({
-            user_id: data.user.id,
-            username: username || email.split('@')[0], // Use provided username or fallback to email
-            tiktok_username: role === 'streamer' ? (tiktokUsername || '') : 'N/A',
-            email: email,
-            role: role,
-            is_active: true
-          })
-
-        if (streamerError) {
-          console.error('Error creating user record:', streamerError)
-          return { error: 'Failed to create user profile: ' + streamerError.message }
-        } else {
-          console.log('Database record created successfully')
-          
-          // Mark invitation key as used for admin accounts
-          if (role === 'admin' && invitationKey) {
-            console.log('Marking invitation key as used...')
-            const { error: updateError } = await supabase
-              .from('admin_invitations')
-              .update({
-                used_by: data.user.id,
-                is_used: true,
-                used_at: new Date().toISOString()
-              })
-              .eq('invitation_key', invitationKey)
-            
-            if (updateError) {
-              console.error('Error updating invitation key:', updateError)
-              // Don't fail registration for this, just log it
-            }
-          }
-        }
+      if (signInError) {
+        console.error('Sign in after registration failed:', signInError)
+        return { error: 'Account created but sign in failed: ' + signInError.message }
       }
 
       return {}
