@@ -119,14 +119,23 @@ export async function POST(request: NextRequest) {
     const payoutRequestData = {
       streamer_id,
       stream_session_id,
-      requested_amount: session.payout_amount,
-      duration_minutes: session.duration_minutes,
-      peak_viewers: session.peak_viewers,
-      average_viewers: session.average_viewers,
-      meets_time_goal: session.meets_time_goal,
-      meets_viewer_goal: session.meets_viewer_goal,
+      requested_amount: session.payout_amount || 0,
+      duration_minutes: session.duration_minutes || 0,
+      peak_viewers: session.peak_viewers || 0,
+      average_viewers: session.average_viewers || 0,
+      total_viewers: session.total_viewers || 0,
+      meets_time_goal: session.meets_time_goal || false,
+      meets_viewer_goal: session.meets_viewer_goal || false,
       paypal_username: paypal_username.trim(),
       status: 'pending'
+    }
+
+    // Validate the data before inserting
+    if (payoutRequestData.requested_amount < 0) {
+      return NextResponse.json(
+        { error: 'Invalid payout amount' },
+        { status: 400 }
+      )
     }
 
     console.log('Creating payout request with data:', payoutRequestData)
