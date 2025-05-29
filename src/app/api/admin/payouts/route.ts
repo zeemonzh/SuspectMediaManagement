@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createSupabaseServerClient } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 
 // Prevent route caching
 export const dynamic = 'force-dynamic'
+
+// Create service role client
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 interface AdminPayout {
   id: string
@@ -25,7 +31,6 @@ interface AdminPayout {
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createSupabaseServerClient()
     const allPayouts: AdminPayout[] = []
 
     // Get payout requests (the new system)
@@ -33,13 +38,13 @@ export async function GET(request: NextRequest) {
       .from('payout_requests')
       .select(`
         *,
-        streamers!inner(
+        streamers:streamers(
           id,
           username,
           tiktok_username,
           email
         ),
-        stream_sessions!inner(
+        stream_sessions:stream_sessions(
           id,
           start_time,
           end_time,
@@ -79,7 +84,7 @@ export async function GET(request: NextRequest) {
       .from('payouts')
       .select(`
         *,
-        streamers!inner(
+        streamers:streamers(
           id,
           username,
           tiktok_username,
@@ -131,8 +136,6 @@ export async function PATCH(request: NextRequest) {
         { status: 400 }
       )
     }
-
-    const supabase = createSupabaseServerClient()
 
     if (payoutId.startsWith('legacy-')) {
       // Handle legacy payout update
