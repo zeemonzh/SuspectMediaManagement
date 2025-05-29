@@ -123,7 +123,6 @@ export async function POST(request: NextRequest) {
       duration_minutes: session.duration_minutes || 0,
       peak_viewers: session.peak_viewers || 0,
       average_viewers: session.average_viewers || 0,
-      total_viewers: session.total_viewers || 0,
       meets_time_goal: session.meets_time_goal || false,
       meets_viewer_goal: session.meets_viewer_goal || false,
       paypal_username: paypal_username.trim(),
