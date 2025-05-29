@@ -115,29 +115,51 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Prepare payout request data
+    const payoutRequestData = {
+      streamer_id,
+      stream_session_id,
+      requested_amount: session.payout_amount,
+      duration_minutes: session.duration_minutes,
+      peak_viewers: session.peak_viewers,
+      average_viewers: session.average_viewers,
+      meets_time_goal: session.meets_time_goal,
+      meets_viewer_goal: session.meets_viewer_goal,
+      paypal_username: paypal_username.trim(),
+      status: 'pending'
+    }
+
+    console.log('Creating payout request with data:', payoutRequestData)
+
     // Create payout request
     const { data: payoutRequest, error: insertError } = await supabase
       .from('payout_requests')
-      .insert({
-        streamer_id,
-        stream_session_id,
-        requested_amount: session.payout_amount,
-        duration_minutes: session.duration_minutes,
-        peak_viewers: session.peak_viewers,
-        average_viewers: session.average_viewers,
-        meets_time_goal: session.meets_time_goal,
-        meets_viewer_goal: session.meets_viewer_goal,
-        paypal_username: paypal_username.trim()
-      })
+      .insert([payoutRequestData])
       .select()
 
     if (insertError) {
       console.error('Error creating payout request:', insertError)
+      console.error('Error details:', {
+        code: insertError.code,
+        message: insertError.message,
+        details: insertError.details,
+        hint: insertError.hint
+      })
       return NextResponse.json(
-        { error: 'Failed to create payout request' },
+        { error: `Failed to create payout request: ${insertError.message}` },
         { status: 500 }
       )
     }
+
+    if (!payoutRequest || payoutRequest.length === 0) {
+      console.error('No payout request created')
+      return NextResponse.json(
+        { error: 'Failed to create payout request: No data returned' },
+        { status: 500 }
+      )
+    }
+
+    console.log('Successfully created payout request:', payoutRequest)
 
     // Update stream session to mark payout as requested
     const { error: updateError } = await supabase
@@ -153,11 +175,16 @@ export async function POST(request: NextRequest) {
       // Don't return error since payout request was created successfully
     }
 
-    return NextResponse.json(payoutRequest)
-  } catch (error) {
-    console.error('Error creating payout request:', error)
+    return NextResponse.json(payoutRequest[0])
+  } catch (error: any) {
+    console.error('Unhandled error creating payout request:', error)
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    })
     return NextResponse.json(
-      { error: 'Failed to create payout request' },
+      { error: `Failed to create payout request: ${error.message}` },
       { status: 500 }
     )
   }
