@@ -66,24 +66,26 @@ export default function AdminDashboard() {
 
   // Add effect to refresh data when the component becomes visible
   useEffect(() => {
-    function handleVisibilityChange() {
-      if (document.visibilityState === 'visible' && isAdmin) {
-        fetchDashboardStats()
-        fetchRecentActivity()
+    if (typeof window !== 'undefined') {
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible' && isAdmin) {
+          fetchDashboardStats()
+          fetchRecentActivity()
+        }
       }
-    }
 
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    window.addEventListener('focus', () => {
-      if (isAdmin) {
-        fetchDashboardStats()
-        fetchRecentActivity()
+      document.addEventListener('visibilitychange', handleVisibilityChange)
+      window.addEventListener('focus', () => {
+        if (isAdmin) {
+          fetchDashboardStats()
+          fetchRecentActivity()
+        }
+      })
+
+      return () => {
+        document.removeEventListener('visibilitychange', handleVisibilityChange)
+        window.removeEventListener('focus', () => {})
       }
-    })
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-      window.removeEventListener('focus', () => {})
     }
   }, [isAdmin])
 

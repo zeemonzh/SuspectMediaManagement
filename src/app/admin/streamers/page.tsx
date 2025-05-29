@@ -24,41 +24,37 @@ interface Streamer {
 export default function AdminStreamers() {
   const [streamers, setStreamers] = useState<Streamer[]>([])
   const [loading, setLoading] = useState(true)
-  const router = useRouter()
 
   // Fetch streamers from database
   useEffect(() => {
-    fetchStreamers()
-    
-    // Set up auto-refresh interval
-    const interval = setInterval(fetchStreamers, 60000) // Refresh every minute
+    if (typeof window !== 'undefined') {
+      fetchStreamers()
+      
+      // Set up auto-refresh interval
+      const interval = setInterval(fetchStreamers, 60000) // Refresh every minute
 
-    // Add visibility change listener
-    function handleVisibilityChange() {
-      if (document.visibilityState === 'visible') {
+      // Add visibility change listener
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+          fetchStreamers()
+        }
+      }
+
+      // Add focus listener
+      const handleFocus = () => {
         fetchStreamers()
       }
-    }
 
-    // Add focus listener
-    function handleFocus() {
-      fetchStreamers()
-    }
-
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    window.addEventListener('focus', handleFocus)
-    
-    return () => {
-      clearInterval(interval)
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-      window.removeEventListener('focus', handleFocus)
+      document.addEventListener('visibilitychange', handleVisibilityChange)
+      window.addEventListener('focus', handleFocus)
+      
+      return () => {
+        clearInterval(interval)
+        document.removeEventListener('visibilitychange', handleVisibilityChange)
+        window.removeEventListener('focus', handleFocus)
+      }
     }
   }, [])
-
-  // Add effect to refresh on navigation
-  useEffect(() => {
-    fetchStreamers()
-  }, [window.location.pathname])
 
   const fetchStreamers = async (force = false) => {
     try {
