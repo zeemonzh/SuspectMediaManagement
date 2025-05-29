@@ -1,36 +1,59 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createSupabaseServerClient } from '@/lib/supabase'
+
+// Use secure utility that avoids caching issues
+const { createSupabaseServerClient } = require('../../../lib/supabase-server')
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('Dashboard stats API called - using secure utility approach')
+    
     const supabase = createSupabaseServerClient()
     
-    // Get total streamers (excluding admins)
-    const { count: totalStreamers } = await supabase
+    // Get total streamers (using same query as working debug script)
+    const { data: totalStreamersData, error: totalError } = await supabase
       .from('streamers')
-      .select('*', { count: 'exact', head: true })
+      .select('*')
+      .eq('role', 'streamer')
+
+    console.log('Total streamers query result:', totalStreamersData?.length || 0, 'error:', totalError)
+
+    // Get active streamers
+    const { data: activeStreamersData, error: activeError } = await supabase
+      .from('streamers')
+      .select('*')
       .eq('is_active', true)
       .eq('role', 'streamer')
+
+    console.log('Active streamers query result:', activeStreamersData?.length || 0, 'error:', activeError)
+
+    // Get pending streamers (inactive, waiting for email confirmation)
+    const { data: pendingStreamersData, error: pendingError } = await supabase
+      .from('streamers')
+      .select('*')
+      .eq('is_active', false)
+      .eq('role', 'streamer')
+
+    console.log('Pending streamers query result:', pendingStreamersData?.length || 0, 'error:', pendingError)
 
     // Get active streams (started today, no end time)
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-    const { count: activeStreams } = await supabase
+    const { data: activeStreamsData, error: streamsError } = await supabase
       .from('stream_sessions')
-      .select('*', { count: 'exact', head: true })
+      .select('*')
       .gte('start_time', today.toISOString())
       .is('end_time', null)
 
     // Get pending payout requests
-    const { count: pendingPayouts } = await supabase
+    const { data: pendingPayoutsData, error: payoutsError } = await supabase
       .from('payout_requests')
-      .select('*', { count: 'exact', head: true })
+      .select('*')
       .eq('status', 'pending')
 
     // Get pending key requests
-    const { count: pendingKeyRequests } = await supabase
+    const { data: pendingKeyRequestsData, error: keyRequestsError } = await supabase
       .from('key_requests')
-      .select('*', { count: 'exact', head: true })
+      .select('*')
       .eq('status', 'pending')
 
     // Get total hours this week
@@ -47,7 +70,7 @@ export async function GET(request: NextRequest) {
       .gte('start_time', thisWeek.toISOString())
       .not('duration_minutes', 'is', null)
 
-    const totalMinutes = weekSessions?.reduce((sum, session) => sum + (session.duration_minutes || 0), 0) || 0
+    const totalMinutes = weekSessions?.reduce((sum: number, session: any) => sum + (session.duration_minutes || 0), 0) || 0
     const totalHours = Math.round(totalMinutes / 60)
 
     // Get average viewers this week
@@ -59,18 +82,23 @@ export async function GET(request: NextRequest) {
 
     let avgViewers = 0
     if (viewerSessions?.length) {
-      const totalViewers = viewerSessions.reduce((sum, session) => sum + (session.total_viewers || session.average_viewers || 0), 0)
+      const totalViewers = viewerSessions.reduce((sum: number, session: any) => sum + (session.total_viewers || session.average_viewers || 0), 0)
       avgViewers = Math.round(totalViewers / viewerSessions.length)
     }
 
-    return NextResponse.json({
-      totalStreamers: totalStreamers || 0,
-      activeStreams: activeStreams || 0,
-      pendingPayouts: pendingPayouts || 0,
-      pendingKeyRequests: pendingKeyRequests || 0,
+    const result = {
+      totalStreamers: totalStreamersData?.length || 0,
+      activeStreamers: activeStreamersData?.length || 0,
+      pendingStreamers: pendingStreamersData?.length || 0,
+      activeStreams: activeStreamsData?.length || 0,
+      pendingPayouts: pendingPayoutsData?.length || 0,
+      pendingKeyRequests: pendingKeyRequestsData?.length || 0,
       totalHours,
       avgViewers
-    })
+    }
+
+    console.log('Final dashboard stats result:', result)
+    return NextResponse.json(result)
 
   } catch (error) {
     console.error('Error fetching dashboard stats:', error)

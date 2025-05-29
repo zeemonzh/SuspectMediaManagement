@@ -1,10 +1,8 @@
-import { createClient } from '@supabase/supabase-js'
+// Use secure utility that avoids caching issues
+const { createSupabaseServerClient } = require('../../../../../lib/supabase-server')
 import { NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabase = createSupabaseServerClient()
 
 export async function GET(
   request: Request,
@@ -33,17 +31,17 @@ export async function GET(
 
     // Calculate stats
     const totalStreams = sessions.length
-    const totalHours = sessions.reduce((sum, session) => sum + (session.duration_minutes || 0), 0) / 60
+    const totalHours = sessions.reduce((sum: number, session: any) => sum + (session.duration_minutes || 0), 0) / 60
     const avgViewers = sessions.length > 0 
-      ? Math.round(sessions.reduce((sum, session) => sum + (session.average_viewers || 0), 0) / sessions.length)
+      ? Math.round(sessions.reduce((sum: number, session: any) => sum + (session.average_viewers || 0), 0) / sessions.length)
       : 0
 
     // Get current month's data
     const currentMonth = new Date().toISOString().substring(0, 7)
-    const currentMonthSessions = sessions.filter(session => 
+    const currentMonthSessions = sessions.filter((session: any) => 
       session.start_time.startsWith(currentMonth)
     )
-    const currentMonthHours = currentMonthSessions.reduce((sum, session) => sum + (session.duration_minutes || 0), 0) / 60
+    const currentMonthHours = currentMonthSessions.reduce((sum: number, session: any) => sum + (session.duration_minutes || 0), 0) / 60
 
     // Get current goal
     const { data: goal, error: goalError } = await supabase
@@ -73,7 +71,7 @@ export async function GET(
     }
 
     // Get recent streams (last 5)
-    const recentStreams = sessions.slice(0, 5).map(session => ({
+    const recentStreams = sessions.slice(0, 5).map((session: any) => ({
       date: new Date(session.start_time).toISOString().split('T')[0],
       duration: `${Math.floor((session.duration_minutes || 0) / 60)}h ${(session.duration_minutes || 0) % 60}m`,
       viewers: session.peak_viewers || 0,

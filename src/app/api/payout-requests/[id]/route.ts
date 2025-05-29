@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+// Use secure utility that avoids caching issues
+const { createSupabaseServerClient } = require('../../../../lib/supabase-server')
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+const supabase = createSupabaseServerClient()
 
 // PATCH - Update payout request status (approve/deny)
 export async function PATCH(
