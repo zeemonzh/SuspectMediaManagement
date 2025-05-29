@@ -6,6 +6,9 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import LoadingSpinner from '@/components/LoadingSpinner'
 
+// Prevent page caching
+export const dynamic = 'force-dynamic'
+
 interface Streamer {
   id: string
   username: string
@@ -21,6 +24,7 @@ interface Streamer {
 export default function AdminStreamers() {
   const [streamers, setStreamers] = useState<Streamer[]>([])
   const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
   // Fetch streamers from database
   useEffect(() => {
@@ -28,9 +32,33 @@ export default function AdminStreamers() {
     
     // Set up auto-refresh interval
     const interval = setInterval(fetchStreamers, 60000) // Refresh every minute
+
+    // Add visibility change listener
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'visible') {
+        fetchStreamers()
+      }
+    }
+
+    // Add focus listener
+    function handleFocus() {
+      fetchStreamers()
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleFocus)
     
-    return () => clearInterval(interval)
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleFocus)
+    }
   }, [])
+
+  // Add effect to refresh on navigation
+  useEffect(() => {
+    fetchStreamers()
+  }, [window.location.pathname])
 
   const fetchStreamers = async (force = false) => {
     try {

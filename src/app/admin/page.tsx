@@ -6,6 +6,9 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import LoadingSpinner, { LoadingDots } from '@/components/LoadingSpinner'
 
+// Prevent page caching
+export const dynamic = 'force-dynamic'
+
 interface DashboardStats {
   totalStreamers: number
   activeStreams: number
@@ -86,7 +89,13 @@ export default function AdminDashboard() {
 
   const fetchDashboardStats = async () => {
     try {
-      const response = await fetch('/api/dashboard-stats')
+      const response = await fetch('/api/dashboard-stats', {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      })
       if (response.ok) {
         const data = await response.json()
         setStats(data)
