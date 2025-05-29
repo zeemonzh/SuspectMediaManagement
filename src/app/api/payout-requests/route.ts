@@ -51,6 +51,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { streamer_id, stream_session_id, paypal_username } = body
 
+    console.log('Creating payout request:', { streamer_id, stream_session_id, paypal_username })
+
     if (!streamer_id || !stream_session_id || !paypal_username) {
       return NextResponse.json(
         { error: 'Streamer ID, Stream Session ID, and PayPal username are required' },
@@ -66,19 +68,38 @@ export async function POST(request: NextRequest) {
       .eq('streamer_id', streamer_id)
       .single()
 
-    if (sessionError || !session) {
+    if (sessionError) {
+      console.error('Error fetching stream session:', sessionError)
       return NextResponse.json(
         { error: 'Stream session not found' },
         { status: 404 }
       )
     }
 
+    if (!session) {
+      console.error('Stream session not found:', { stream_session_id, streamer_id })
+      return NextResponse.json(
+        { error: 'Stream session not found' },
+        { status: 404 }
+      )
+    }
+
+    console.log('Found stream session:', session)
+
     // Check if payout already requested for this session
-    const { data: existingRequest } = await supabase
+    const { data: existingRequest, error: existingError } = await supabase
       .from('payout_requests')
       .select('id')
       .eq('stream_session_id', stream_session_id)
       .single()
+
+    if (existingError && !existingError.message.includes('No rows found')) {
+      console.error('Error checking existing request:', existingError)
+      return NextResponse.json(
+        { error: 'Failed to check existing payout request' },
+        { status: 500 }
+      )
+    }
 
     if (existingRequest) {
       return NextResponse.json(
@@ -96,7 +117,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create payout request
-    const { data: payoutRequest, error } = await supabase
+    const { data: payoutRequest, error: insertError } = await supabase
       .from('payout_requests')
       .insert({
         streamer_id,
@@ -110,12 +131,17 @@ export async function POST(request: NextRequest) {
         paypal_username: paypal_username.trim()
       })
       .select()
-      .single()
 
-    if (error) throw error
+    if (insertError) {
+      console.error('Error creating payout request:', insertError)
+      return NextResponse.json(
+        { error: 'Failed to create payout request' },
+        { status: 500 }
+      )
+    }
 
-    // Mark session as payout requested
-    await supabase
+    // Update stream session to mark payout as requested
+    const { error: updateError } = await supabase
       .from('stream_sessions')
       .update({
         payout_requested: true,
@@ -123,7 +149,12 @@ export async function POST(request: NextRequest) {
       })
       .eq('id', stream_session_id)
 
-    return NextResponse.json(payoutRequest, { status: 201 })
+    if (updateError) {
+      console.error('Error updating stream session:', updateError)
+      // Don't return error since payout request was created successfully
+    }
+
+    return NextResponse.json(payoutRequest)
   } catch (error) {
     console.error('Error creating payout request:', error)
     return NextResponse.json(
