@@ -21,32 +21,18 @@ interface Streamer {
 export default function AdminStreamers() {
   const [streamers, setStreamers] = useState<Streamer[]>([])
   const [loading, setLoading] = useState(true)
-  const [lastFetch, setLastFetch] = useState<number>(0)
-
-  // Cache duration: 2 minutes
-  const CACHE_DURATION = 2 * 60 * 1000
 
   // Fetch streamers from database
   useEffect(() => {
-    const now = Date.now()
+    fetchStreamers()
     
-    // Only fetch if cache is expired or doesn't exist
-    if (now - lastFetch > CACHE_DURATION) {
-      fetchStreamers()
-    } else {
-      setLoading(false)
-    }
+    // Set up auto-refresh interval
+    const interval = setInterval(fetchStreamers, 60000) // Refresh every minute
+    
+    return () => clearInterval(interval)
   }, [])
 
   const fetchStreamers = async (force = false) => {
-    const now = Date.now()
-    
-    // Check cache unless forced
-    if (!force && now - lastFetch < CACHE_DURATION) {
-      setLoading(false)
-      return
-    }
-
     try {
       console.log('Fetching streamers from /api/streamers...')
       const response = await fetch('/api/streamers')
@@ -56,7 +42,6 @@ export default function AdminStreamers() {
         const data = await response.json()
         console.log('Received streamers:', data)
         setStreamers(data)
-        setLastFetch(now)
       } else {
         const errorText = await response.text()
         console.error('Error fetching streamers:', response.status, errorText)

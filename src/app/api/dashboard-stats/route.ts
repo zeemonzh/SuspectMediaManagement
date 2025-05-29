@@ -81,6 +81,12 @@ export async function GET(request: NextRequest) {
       avgViewers = Math.round(totalViewers / viewerSessions.length)
     }
 
+    // Add cache-control headers to prevent stale data
+    const headers = new Headers({
+      'Cache-Control': 'no-store, must-revalidate',
+      'Pragma': 'no-cache'
+    })
+
     return NextResponse.json({
       totalStreamers: totalStreamers || 0,
       activeStreams: activeStreams || 0,
@@ -88,7 +94,7 @@ export async function GET(request: NextRequest) {
       pendingKeyRequests: pendingKeyRequests || 0,
       totalHours,
       avgViewers
-    })
+    }, { headers })
 
   } catch (error) {
     console.error('Error fetching dashboard stats:', error)

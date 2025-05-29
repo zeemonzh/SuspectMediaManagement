@@ -46,6 +46,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (isAdmin) {
+      // Force initial fetch
       fetchDashboardStats()
       fetchRecentActivity()
       
@@ -57,6 +58,29 @@ export default function AdminDashboard() {
         clearInterval(statsInterval)
         clearInterval(activityInterval)
       }
+    }
+  }, [isAdmin])
+
+  // Add effect to refresh data when the component becomes visible
+  useEffect(() => {
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'visible' && isAdmin) {
+        fetchDashboardStats()
+        fetchRecentActivity()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', () => {
+      if (isAdmin) {
+        fetchDashboardStats()
+        fetchRecentActivity()
+      }
+    })
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', () => {})
     }
   }, [isAdmin])
 

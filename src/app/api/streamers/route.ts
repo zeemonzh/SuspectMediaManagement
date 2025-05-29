@@ -65,7 +65,13 @@ export async function GET() {
       }
     }) || []
 
-    return NextResponse.json(streamersWithStats)
+    // Add cache-control headers to prevent stale data
+    const headers = new Headers({
+      'Cache-Control': 'no-store, must-revalidate',
+      'Pragma': 'no-cache'
+    })
+
+    return NextResponse.json(streamersWithStats, { headers })
   } catch (error) {
     console.error('Error fetching streamers:', error)
     return NextResponse.json(
