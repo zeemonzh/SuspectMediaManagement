@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase'
 
+// Prevent route caching
+export const dynamic = 'force-dynamic'
+
 interface AdminPayout {
   id: string
   streamer_id: string
