@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createSupabaseServerClient } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
+
+// Create service role client
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 interface StreamerAnalytics {
   id: string
@@ -38,8 +44,6 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const timeframe = searchParams.get('timeframe') || 'month'
-    
-    const supabase = createSupabaseServerClient()
     
     // Calculate date range based on timeframe
     const now = new Date()
