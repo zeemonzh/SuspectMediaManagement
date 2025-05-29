@@ -59,7 +59,16 @@ export default function AdminStreamers() {
   const fetchStreamers = async (force = false) => {
     try {
       console.log('Fetching streamers from /api/streamers...')
-      const response = await fetch('/api/streamers')
+      const response = await fetch('/api/streamers', {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache'
+        },
+        next: {
+          revalidate: 0
+        }
+      })
       console.log('Response status:', response.status)
       
       if (response.ok) {

@@ -94,8 +94,11 @@ export default function AdminDashboard() {
       const response = await fetch('/api/dashboard-stats', {
         cache: 'no-store',
         headers: {
-          'Cache-Control': 'no-cache',
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
           'Pragma': 'no-cache'
+        },
+        next: {
+          revalidate: 0
         }
       })
       if (response.ok) {
@@ -111,7 +114,16 @@ export default function AdminDashboard() {
 
   const fetchRecentActivity = async () => {
     try {
-      const response = await fetch('/api/recent-activity')
+      const response = await fetch('/api/recent-activity', {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache'
+        },
+        next: {
+          revalidate: 0
+        }
+      })
       if (response.ok) {
         const data = await response.json()
         setRecentActivity(data)
