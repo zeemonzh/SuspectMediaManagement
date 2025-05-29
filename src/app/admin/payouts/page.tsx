@@ -102,12 +102,12 @@ export default function AdminPayouts() {
 
   const handleStatusUpdate = async (payoutId: string, status: string) => {
     try {
-      const response = await fetch(`/api/payouts/${payoutId}`, {
+      const response = await fetch(`/api/admin/payouts`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ status })
+        body: JSON.stringify({ payoutId, status })
       })
 
       if (response.ok) {

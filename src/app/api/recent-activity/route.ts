@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
+// Prevent route caching
+export const dynamic = 'force-dynamic'
+
 interface Activity {
   id: string
   type: string
