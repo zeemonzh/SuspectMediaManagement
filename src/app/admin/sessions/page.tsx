@@ -468,7 +468,6 @@ export default function AdminSessions() {
                           </td>
                           <td className="text-suspect-text py-4 px-4">
                             {session.is_live ? getCurrentDuration(session.start_time) : formatDuration(session.duration_minutes)}
-                            {session.is_live && <span className="ml-2 text-red-500 animate-pulse">● LIVE</span>}
                           </td>
                           <td className="text-suspect-text py-4 px-4">
                             {session.average_viewers?.toLocaleString() || '-'}
