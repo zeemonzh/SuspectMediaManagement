@@ -22,6 +22,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [streamer, setStreamer] = useState<Streamer | null>(null)
   const [loading, setLoading] = useState(true)
   const supabase = createSupabaseBrowserClient()
+  
+  // Track if registration completion is in progress to prevent race conditions
+  const completingRegistration = useRef<Set<string>>(new Set())
 
   useEffect(() => {
     let isMounted = true
@@ -53,15 +56,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await fetch(`/api/auth/streamer?user_id=${userId}`)
       const result = await response.json()
-      
+
       if (result.streamer) {
         setStreamer(result.streamer)
       } else {
-        setStreamer(null)
+        // Check if completion is already in progress for this user
+        if (completingRegistration.current.has(userId)) {
+          console.log('Registration completion already in progress for user:', userId)
+          return
+        }
+        
+        // If no streamer profile exists, try to complete registration
+        console.log('No streamer profile found, attempting to complete registration...')
+        
+        // Mark completion as in progress
+        completingRegistration.current.add(userId)
+        
+        try {
+          const completeResponse = await fetch('/api/auth/complete-registration', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ userId })
+          })
+          
+          const completeResult = await completeResponse.json()
+          
+          if (completeResponse.ok && completeResult.success) {
+            console.log('Registration completed successfully')
+            // Retry fetching the streamer data
+            const retryResponse = await fetch(`/api/auth/streamer?user_id=${userId}`)
+            const retryResult = await retryResponse.json()
+            
+            if (retryResult.streamer) {
+              setStreamer(retryResult.streamer)
+            } else {
+              setStreamer(null)
+            }
+          } else {
+            console.log('Could not complete registration:', completeResult.error)
+            setStreamer(null)
+          }
+        } finally {
+          // Always remove from progress tracking
+          completingRegistration.current.delete(userId)
+        }
       }
     } catch (error) {
       console.error('Error fetching streamer data:', error)
       setStreamer(null)
+      // Clean up progress tracking on error
+      completingRegistration.current.delete(userId)
     }
   }
 
@@ -86,98 +132,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('Starting signup for:', email, 'as role:', role, 'with username:', username)
       
-      // Validate invitation key for admin accounts
-      if (role === 'admin') {
-        if (!invitationKey) {
-          return { error: 'Invitation key is required for admin accounts' }
-        }
-
-        console.log('Validating admin invitation key:', invitationKey)
-        
-        // Check if invitation key is valid and unused
-        const { data: invitation, error: inviteError } = await supabase
-          .from('admin_invitations')
-          .select('*')
-          .eq('invitation_key', invitationKey)
-          .eq('is_used', false)
-          .single()
-
-        if (inviteError || !invitation) {
-          console.error('Invalid invitation key:', inviteError)
-          return { error: 'Invalid or expired invitation key' }
-        }
-
-        // Check if key has expired
-        if (invitation.expires_at && new Date(invitation.expires_at) < new Date()) {
-          return { error: 'Invitation key has expired' }
-        }
-
-        console.log('Invitation key validated successfully')
-      }
-
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
+      // Use the registration API endpoint instead of direct Supabase calls
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          role,
+          username,
+          invitationKey,
+          tiktokUsername
+        })
       })
 
-      if (error) {
-        console.error('Signup auth error:', error)
-        return { error: error.message }
+      const result = await response.json()
+
+      if (!response.ok) {
+        console.error('Registration API error:', result.error)
+        return { error: result.error || 'Registration failed' }
       }
 
-      console.log('Auth signup successful, user:', data.user?.id)
-
-      // Create streamer record for both roles
-      if (data.user) {
-        console.log('Creating database record...')
-        const { error: streamerError } = await supabase
-          .from('streamers')
-          .insert({
-            user_id: data.user.id,
-            username: username || email.split('@')[0], // Use provided username or fallback to email
-            tiktok_username: role === 'streamer' ? (tiktokUsername || '') : null,
-            email: email,
-            role: role,
-            is_active: true
-          })
-
-        if (streamerError) {
-          console.error('Error creating user record:', streamerError)
-          return { error: 'Failed to create user profile: ' + streamerError.message }
-        } else {
-          console.log('Database record created successfully')
-          
-          // Mark invitation key as used for admin accounts
-          if (role === 'admin' && invitationKey) {
-            console.log('Marking invitation key as used...')
-            try {
-              const response = await fetch('/api/admin/invitation-keys/use', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  invitation_key: invitationKey,
-                  used_by: data.user.id
-                })
-              })
-              
-              if (!response.ok) {
-                const errorData = await response.json()
-                console.error('Error marking invitation key as used:', errorData.error)
-                // Don't fail registration for this, just log it
-              } else {
-                console.log('Invitation key marked as used successfully')
-              }
-            } catch (updateError) {
-              console.error('Error updating invitation key:', updateError)
-              // Don't fail registration for this, just log it
-            }
-          }
-        }
-      }
-
+      console.log('Registration successful:', result.message)
       return {}
+
     } catch (error) {
       console.error('Signup general error:', error)
       return { error: 'An unexpected error occurred' }

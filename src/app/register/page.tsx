@@ -95,9 +95,7 @@ export default function RegisterPage() {
       setLoading(false)
     } else {
       setSuccess(true)
-      setTimeout(() => {
-        router.push('/login')
-      }, 2000)
+      // Remove automatic redirect - users need to confirm email first
     }
   }
 
@@ -107,13 +105,16 @@ export default function RegisterPage() {
         <div className="max-w-md w-full text-center">
           <div className="card p-8">
             <div className="text-green-400 text-5xl mb-4">✓</div>
-            <h2 className="text-2xl font-bold text-suspect-text mb-4">Account Created!</h2>
+            <h2 className="text-2xl font-bold text-suspect-text mb-4">Check Your Email!</h2>
             <p className="text-suspect-gray-400 mb-4">
-              Please check your email to verify your account, then sign in.
+              We've sent a confirmation email to <strong>{email}</strong>. Please click the link in the email to verify your account.
             </p>
-            <p className="text-suspect-gray-400 text-sm">
-              Redirecting to login page...
+            <p className="text-suspect-gray-400 text-sm mb-4">
+              After confirming your email, you can sign in with your credentials.
             </p>
+            <Link href="/login" className="btn-primary">
+              Go to Login Page
+            </Link>
           </div>
         </div>
       </div>

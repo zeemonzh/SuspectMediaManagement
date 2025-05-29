@@ -120,11 +120,26 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Get the category name for the product_name field (required by database)
+    const { data: category, error: categoryError } = await supabase
+      .from('product_categories')
+      .select('name')
+      .eq('id', category_id.trim())
+      .single()
+
+    if (categoryError || !category) {
+      return NextResponse.json(
+        { error: 'Invalid category selected' },
+        { status: 400 }
+      )
+    }
+
     // Insert new key request
     const { data: newRequest, error } = await supabase
       .from('key_requests')
       .insert({
         streamer_id: streamer_id.trim(),
+        product_name: category.name, // Use category name for backwards compatibility
         category_id: category_id.trim(),
         status: 'pending',
         created_at: new Date().toISOString(),

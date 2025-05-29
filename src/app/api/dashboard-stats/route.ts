@@ -1,19 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
+
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
-    
-    // Get total streamers (excluding admins)
-    const { count: totalStreamers } = await supabase
+    // Get total streamers (excluding admins) - EXACT same query as /api/streamers
+    const { data: streamers, error: streamersError } = await supabase
       .from('streamers')
-      .select('*', { count: 'exact', head: true })
-      .eq('is_active', true)
+      .select(`
+        *,
+        stream_sessions!left(
+          duration_minutes,
+          average_viewers,
+          payout_amount
+        ),
+        payout_requests!left(
+          requested_amount,
+          status
+        )
+      `)
       .eq('role', 'streamer')
+      .order('created_at', { ascending: false })
+
+    if (streamersError) throw streamersError
+
+    const totalStreamers = streamers?.length || 0
 
     // Get active streams (started today, no end time)
     const today = new Date()
