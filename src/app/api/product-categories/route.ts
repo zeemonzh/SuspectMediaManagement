@@ -12,6 +12,7 @@ export async function GET() {
     const { data: categories, error } = await supabase
       .from('product_categories')
       .select('*')
+      .eq('is_active', true)
       .order('name', { ascending: true })
 
     if (error) throw error
@@ -59,6 +60,7 @@ export async function POST(request: NextRequest) {
       .insert({
         name: name.trim(),
         description: description?.trim() || null,
+        is_active: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })

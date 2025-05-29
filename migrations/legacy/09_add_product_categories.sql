@@ -3,9 +3,13 @@ CREATE TABLE IF NOT EXISTS product_categories (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL UNIQUE,
     description TEXT,
+    is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Update any existing categories to be active
+UPDATE product_categories SET is_active = true WHERE is_active IS NULL;
 
 -- Add category_id to product_keys table
 ALTER TABLE product_keys ADD COLUMN IF NOT EXISTS category_id UUID REFERENCES product_categories(id);

@@ -91,9 +91,16 @@ export default function StreamerDashboard() {
   const fetchProductCategories = async () => {
     try {
       const response = await fetch('/api/product-categories')
-      if (response.ok) {
-        const data = await response.json()
+      if (!response.ok) {
+        const error = await response.json()
+        console.error('Error fetching product categories:', error)
+        return
+      }
+      const data = await response.json()
+      if (Array.isArray(data)) {
         setProductCategories(data)
+      } else {
+        console.error('Invalid product categories data:', data)
       }
     } catch (error) {
       console.error('Error fetching product categories:', error)

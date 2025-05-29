@@ -348,12 +348,12 @@ CREATE POLICY "Service role can manage all payouts" ON payouts
 -- ====================================
 
 -- Insert default product categories first
-INSERT INTO product_categories (name, description) VALUES 
-  ('Premium Cheat Package', 'High-tier cheats with advanced features'),
-  ('VIP Access Package', 'VIP membership and exclusive access'),
-  ('Elite Membership', 'Elite tier with all features'),
-  ('Test Package', 'Testing and development keys')
-ON CONFLICT (name) DO NOTHING;
+INSERT INTO product_categories (name, description, is_active) VALUES 
+  ('Premium Cheat Package', 'High-tier cheats with advanced features', true),
+  ('VIP Access Package', 'VIP membership and exclusive access', true),
+  ('Elite Membership', 'Elite tier with all features', true),
+  ('Test Package', 'Testing and development keys', true)
+ON CONFLICT (name) DO UPDATE SET is_active = true;
 
 -- Insert configurable default system settings
 INSERT INTO system_defaults (setting_key, setting_value, description) VALUES 
