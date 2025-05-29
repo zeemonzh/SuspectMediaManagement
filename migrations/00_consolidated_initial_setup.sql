@@ -368,7 +368,7 @@ INSERT INTO system_defaults (setting_key, setting_value, description) VALUES
     "platform_name": "SuspectCheats",
     "superadmin_key": "SUSPECT-SUPERADMIN",
     "currency": "USD",
-    "timezone": "UTC"
+    "timezone": "GMT+2"
   }'::jsonb, 'Platform configuration settings')
 ON CONFLICT (setting_key) DO NOTHING;
 

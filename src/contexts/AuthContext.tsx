@@ -13,6 +13,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, role: 'admin' | 'streamer', username?: string, invitationKey?: string, tiktokUsername?: string) => Promise<{ error?: string }>
   signOut: () => Promise<void>
   isAdmin: boolean
+  refreshStreamerData: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -46,11 +47,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     )
 
+    // Set up refresh interval for streamer data
+    let refreshInterval: NodeJS.Timeout | null = null
+    if (user?.id) {
+      refreshInterval = setInterval(() => {
+        fetchStreamerData(user.id)
+      }, 30000) // Refresh every 30 seconds
+    }
+
     return () => {
       isMounted = false
       subscription.unsubscribe()
+      if (refreshInterval) clearInterval(refreshInterval)
     }
-  }, [])
+  }, [user?.id]) // Add user?.id as a dependency
 
   const fetchStreamerData = async (userId: string) => {
     try {
@@ -204,6 +214,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const isAdmin = streamer?.role === 'admin'
 
+  const refreshStreamerData = async () => {
+    if (user?.id) {
+      await fetchStreamerData(user.id)
+    }
+  }
+
   const value = {
     user,
     streamer,
@@ -211,7 +227,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signIn,
     signUp,
     signOut,
-    isAdmin
+    isAdmin,
+    refreshStreamerData
   }
 
   return (

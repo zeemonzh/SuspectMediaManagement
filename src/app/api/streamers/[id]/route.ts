@@ -46,7 +46,7 @@ export async function DELETE(
     // First get the user to see what we're deleting
     const { data: user, error: getUserError } = await supabase
       .from('streamers')
-      .select('*')
+      .select('user_id, username, role')
       .eq('id', id)
       .single()
 
@@ -57,13 +57,23 @@ export async function DELETE(
       )
     }
 
-    // Delete the user (both streamers and admins)
-    const { error } = await supabase
-      .from('streamers')
-      .delete()
-      .eq('id', id)
+    // Delete the user from auth.users (this will cascade to streamers table due to foreign key)
+    if (user.user_id) {
+      const { error: authDeleteError } = await supabase.auth.admin.deleteUser(
+        user.user_id
+      )
 
-    if (error) throw error
+      if (authDeleteError) {
+        console.error('Error deleting user from auth:', authDeleteError)
+        return NextResponse.json(
+          { error: 'Failed to delete user account' },
+          { status: 500 }
+        )
+      }
+    }
+
+    // The streamer record will be automatically deleted due to CASCADE DELETE
+    // No need to explicitly delete from streamers table
 
     return NextResponse.json({ 
       success: true, 

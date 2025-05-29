@@ -34,7 +34,7 @@ interface StreamerGoals {
 }
 
 export default function StreamerDashboard() {
-  const { user, streamer, signOut, loading } = useAuth()
+  const { user, streamer, signOut, loading, refreshStreamerData } = useAuth()
   const router = useRouter()
   const [streamSessions, setStreamSessions] = useState<StreamSession[]>([])
   const [goals, setGoals] = useState<StreamerGoals>({
@@ -77,10 +77,12 @@ export default function StreamerDashboard() {
       // Set up auto-refresh for dynamic data
       const keysInterval = setInterval(fetchAssignedKeys, 120000) // Every 2 minutes for new keys
       const goalsInterval = setInterval(fetchStreamerGoals, 300000) // Every 5 minutes for goal changes
+      const streamerInterval = setInterval(refreshStreamerData, 30000) // Every 30 seconds for streamer data
       
       return () => {
         clearInterval(keysInterval)
         clearInterval(goalsInterval)
+        clearInterval(streamerInterval)
       }
     }
     fetchProductCategories()
