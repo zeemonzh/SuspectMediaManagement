@@ -82,6 +82,7 @@ export async function GET(request: NextRequest) {
         duration_minutes,
         peak_viewers,
         average_viewers,
+        total_viewers,
         streamers!inner(id, username)
       `)
       .gte('start_time', startDate.toISOString())
@@ -186,7 +187,7 @@ export async function GET(request: NextRequest) {
     const totalStreams = allSessions.length
     const totalMinutes = allSessions.reduce((sum, s) => sum + (s.duration_minutes || 0), 0)
     const totalHours = Math.round(totalMinutes / 60)
-    const totalViewers = allSessions.reduce((sum, s) => sum + (s.peak_viewers || 0), 0)
+    const totalViewers = allSessions.reduce((sum, s) => sum + (s.total_viewers || 0), 0)
     const avgStreamDuration = totalStreams > 0 ? Math.round(totalMinutes / totalStreams) : 0
     const activeStreamers = new Set(allSessions.map(s => s.streamer_id)).size
     

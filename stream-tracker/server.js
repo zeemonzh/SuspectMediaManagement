@@ -104,6 +104,7 @@ class StreamTracker {
           start_time: new Date().toISOString(),
           peak_viewers: 0,
           average_viewers: 0,
+          total_viewers: 0,
           total_likes: 0
         })
         .select()
@@ -134,28 +135,22 @@ class StreamTracker {
     session.viewerCounts.push(viewerCount);
     session.peakViewers = Math.max(session.peakViewers, viewerCount);
     
-    // Estimate total viewers (this is a simple approximation)
-    // In a real scenario, you'd track unique viewer IDs from TikTok
-    session.totalViewers += Math.max(0, viewerCount - (session.viewerCounts[session.viewerCounts.length - 2] || 0));
+    // Update average viewers immediately
+    const avgViewers = Math.round(
+      session.viewerCounts.reduce((a, b) => a + b, 0) / session.viewerCounts.length
+    );
 
-    // Update database every 30 seconds
-    if (session.viewerCounts.length % 30 === 0) {
-      const avgViewers = Math.round(
-        session.viewerCounts.reduce((a, b) => a + b, 0) / session.viewerCounts.length
-      );
-
-      try {
-        await supabase
-          .from('stream_sessions')
-          .update({
-            peak_viewers: session.peakViewers,
-            average_viewers: avgViewers,
-            total_viewers: session.totalViewers
-          })
-          .eq('id', session.sessionId);
-      } catch (error) {
-        console.error('Error updating viewer count:', error);
-      }
+    try {
+      await supabase
+        .from('stream_sessions')
+        .update({
+          peak_viewers: session.peakViewers,
+          average_viewers: avgViewers,
+          total_viewers: viewerCount // Use current viewer count as total
+        })
+        .eq('id', session.sessionId);
+    } catch (error) {
+      console.error('Error updating viewer count:', error);
     }
   }
 
