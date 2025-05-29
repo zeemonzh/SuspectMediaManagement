@@ -492,14 +492,12 @@ export default function AdminSettings() {
                             {key.used_by || '-'}
                           </td>
                           <td className="py-4 px-4">
-                            {!key.used_at && (
-                              <button
-                                onClick={() => deleteKey(key.id, key.code, key.used_by)}
-                                className="text-red-400 hover:text-red-300 text-sm"
-                              >
-                                Delete
-                              </button>
-                            )}
+                            <button
+                              onClick={() => deleteKey(key.id, key.code, key.used_by)}
+                              className="text-red-400 hover:text-red-300 text-sm"
+                            >
+                              Delete
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -840,50 +838,42 @@ export default function AdminSettings() {
 
       {/* Create Invitation Keys Modal */}
       {showCreateKeyModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 transition-opacity" onClick={() => setShowCreateKeyModal(false)}>
-              <div className="absolute inset-0 bg-black opacity-75"></div>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-suspect-header rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-medium text-suspect-text mb-4">Generate Invitation Keys</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-suspect-text mb-2">
+                  Number of keys to generate
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="50"
+                  value={newKeyCount}
+                  onChange={(e) => setNewKeyCount(parseInt(e.target.value) || 1)}
+                  className="input-field w-full"
+                />
+                <p className="text-xs text-suspect-gray-400 mt-1">
+                  Each key can be used once for registration
+                </p>
+              </div>
             </div>
 
-            <div className="inline-block align-bottom bg-suspect-body rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <div className="bg-suspect-body px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                <div className="sm:flex sm:items-start">
-                  <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
-                    <h3 className="text-lg font-medium text-suspect-text">Generate Invitation Keys</h3>
-                    <div className="mt-4">
-                      <label className="block text-sm font-medium text-suspect-text mb-2">
-                        Number of keys to generate
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        max="50"
-                        value={newKeyCount}
-                        onChange={(e) => setNewKeyCount(parseInt(e.target.value) || 1)}
-                        className="input-field w-full"
-                      />
-                      <p className="text-xs text-suspect-gray-400 mt-1">
-                        Each key can be used once for registration
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-suspect-gray-800 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                <button
-                  onClick={generateInvitationKeys}
-                  className="btn-primary w-full sm:w-auto sm:ml-3"
-                >
-                  Generate Keys
-                </button>
-                <button
-                  onClick={() => setShowCreateKeyModal(false)}
-                  className="btn-secondary w-full sm:w-auto mt-3 sm:mt-0"
-                >
-                  Cancel
-                </button>
-              </div>
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => setShowCreateKeyModal(false)}
+                className="btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={generateInvitationKeys}
+                className="btn-primary"
+              >
+                Generate Keys
+              </button>
             </div>
           </div>
         </div>

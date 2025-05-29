@@ -166,14 +166,14 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get invitation key activities (simplified - only recent ones)
+    // Activity from invitation keys
     if (category === 'all' || category === 'system') {
       queries.push(
         supabase
-          .from('invitation_keys')
-          .select('id, code, created_at, used_at, used_by')
+          .from('admin_invitations')
+          .select('*')
           .order('created_at', { ascending: false })
-          .limit(Math.floor(limit / 2)) // Reduce invitation key entries since they're less important
+          .limit(limit)
           .then(({ data: invitationKeys }) => {
             if (invitationKeys) {
               invitationKeys.forEach((key: any) => {
@@ -181,12 +181,12 @@ export async function GET(request: NextRequest) {
                 activities.push({
                   id: `key-created-${key.id}`,
                   type: 'invitation_key_created',
-                  message: `Invitation key generated: ${key.code}`,
+                  message: `Admin invitation key generated: ${key.invitation_key}`,
                   timestamp: key.created_at,
                   user: 'System',
                   category: 'system',
                   status: 'created',
-                  details: { code: key.code }
+                  details: { code: key.invitation_key }
                 })
 
                 // Key usage activity (if used)
@@ -194,12 +194,12 @@ export async function GET(request: NextRequest) {
                   activities.push({
                     id: `key-used-${key.id}`,
                     type: 'invitation_key_used',
-                    message: `Invitation key ${key.code} used for registration`,
+                    message: `Admin invitation key ${key.invitation_key} used for registration`,
                     timestamp: key.used_at,
-                    user: key.used_by,
+                    user: 'Admin User',
                     category: 'system',
                     status: 'used',
-                    details: { code: key.code }
+                    details: { code: key.invitation_key }
                   })
                 }
               })

@@ -135,7 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .insert({
             user_id: data.user.id,
             username: username || email.split('@')[0], // Use provided username or fallback to email
-            tiktok_username: role === 'streamer' ? (tiktokUsername || '') : 'N/A',
+            tiktok_username: role === 'streamer' ? (tiktokUsername || '') : null,
             email: email,
             role: role,
             is_active: true
@@ -150,16 +150,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Mark invitation key as used for admin accounts
           if (role === 'admin' && invitationKey) {
             console.log('Marking invitation key as used...')
-            const { error: updateError } = await supabase
-              .from('admin_invitations')
-              .update({
-                used_by: data.user.id,
-                is_used: true,
-                used_at: new Date().toISOString()
+            try {
+              const response = await fetch('/api/admin/invitation-keys/use', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  invitation_key: invitationKey,
+                  used_by: data.user.id
+                })
               })
-              .eq('invitation_key', invitationKey)
-            
-            if (updateError) {
+              
+              if (!response.ok) {
+                const errorData = await response.json()
+                console.error('Error marking invitation key as used:', errorData.error)
+                // Don't fail registration for this, just log it
+              } else {
+                console.log('Invitation key marked as used successfully')
+              }
+            } catch (updateError) {
               console.error('Error updating invitation key:', updateError)
               // Don't fail registration for this, just log it
             }

@@ -7,42 +7,56 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-// GET - Fetch all invitation keys
+// GET - Fetch all admin invitation keys
 export async function GET() {
   try {
     const { data: keys, error } = await supabase
-      .from('invitation_keys')
-      .select(`
-        *,
-        created_by_user:streamers!invitation_keys_created_by_fkey(username),
-        used_by_user:streamers!invitation_keys_used_by_fkey(username)
-      `)
+      .from('admin_invitations')
+      .select('*')
       .order('created_at', { ascending: false })
 
     if (error) throw error
 
-    // Transform the data to match our interface
-    const transformedKeys = keys?.map(key => ({
-      id: key.id,
-      code: key.code,
-      created_by: key.created_by_user?.username || 'System',
-      created_at: key.created_at,
-      used_at: key.used_at,
-      used_by: key.used_by_user?.username,
-      is_active: key.is_active
-    })) || []
+    // For each key, if it's used, fetch the admin username
+    const transformedKeys = await Promise.all(keys?.map(async (key) => {
+      let usedByAdmin = undefined
+      
+      if (key.used_by) {
+        // Fetch the admin who used this key
+        const { data: admin } = await supabase
+          .from('streamers')
+          .select('username, email')
+          .eq('user_id', key.used_by)
+          .eq('role', 'admin')
+          .single()
+        
+        if (admin) {
+          usedByAdmin = admin.username || admin.email
+        }
+      }
+
+      return {
+        id: key.id,
+        code: key.invitation_key,
+        created_by: 'System', // Most keys are system-generated
+        created_at: key.created_at,
+        used_at: key.used_at,
+        used_by: usedByAdmin,
+        is_active: !key.is_used
+      }
+    }) || [])
 
     return NextResponse.json(transformedKeys)
   } catch (error) {
-    console.error('Error fetching invitation keys:', error)
+    console.error('Error fetching admin invitation keys:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch invitation keys' },
+      { error: 'Failed to fetch admin invitation keys' },
       { status: 500 }
     )
   }
 }
 
-// POST - Generate new invitation keys
+// POST - Generate new admin invitation keys
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -59,14 +73,14 @@ export async function POST(request: NextRequest) {
     const keysToInsert = []
     for (let i = 0; i < count; i++) {
       keysToInsert.push({
-        code: `SUSPECT-${nanoid(12).toUpperCase()}`,
+        invitation_key: `SUSPECT-${nanoid(10).toUpperCase()}`,
         created_by: null, // System-generated keys have no specific creator
-        is_active: true
+        is_used: false
       })
     }
 
     const { data: newKeys, error } = await supabase
-      .from('invitation_keys')
+      .from('admin_invitations')
       .insert(keysToInsert)
       .select()
 
@@ -74,9 +88,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(newKeys, { status: 201 })
   } catch (error) {
-    console.error('Error generating invitation keys:', error)
+    console.error('Error generating admin invitation keys:', error)
     return NextResponse.json(
-      { error: 'Failed to generate invitation keys' },
+      { error: 'Failed to generate admin invitation keys' },
       { status: 500 }
     )
   }
