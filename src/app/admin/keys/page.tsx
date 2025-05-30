@@ -307,7 +307,7 @@ export default function AdminProductKeys() {
 
   const showAlert = (title: string, message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
     setAlertDialog({ isOpen: true, title, message, type })
-  }
+    }
 
   const deleteKey = async (keyId: string, keyValue: string) => {
     try {

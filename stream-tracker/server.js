@@ -134,21 +134,21 @@ class StreamTracker {
     session.peakViewers = Math.max(session.peakViewers, viewerCount);
     
     // Calculate average viewers
-    const avgViewers = Math.round(
-      session.viewerCounts.reduce((a, b) => a + b, 0) / session.viewerCounts.length
-    );
+      const avgViewers = Math.round(
+        session.viewerCounts.reduce((a, b) => a + b, 0) / session.viewerCounts.length
+      );
 
-    try {
-      await supabase
-        .from('stream_sessions')
-        .update({
-          peak_viewers: session.peakViewers,
-          average_viewers: avgViewers,
+      try {
+        await supabase
+          .from('stream_sessions')
+          .update({
+            peak_viewers: session.peakViewers,
+            average_viewers: avgViewers,
           total_viewers: viewerCount // Update total_viewers to current viewer count
-        })
-        .eq('id', session.sessionId);
-    } catch (error) {
-      console.error('Error updating viewer count:', error);
+          })
+          .eq('id', session.sessionId);
+      } catch (error) {
+        console.error('Error updating viewer count:', error);
     }
   }
 
