@@ -22,14 +22,25 @@ export async function GET(request: NextRequest) {
       .select('*', { count: 'exact', head: true })
       .is('end_time', null)
 
-    // Get total hours from all completed sessions
-    const { data: completedSessions } = await supabase
+    // Get total hours from all sessions (both completed and live)
+    const { data: allSessions } = await supabase
       .from('stream_sessions')
-      .select('duration_minutes')
-      .not('duration_minutes', 'is', null)
+      .select('duration_minutes, start_time, end_time')
 
-    const totalMinutes = completedSessions?.reduce((sum, session) => 
-      sum + (session.duration_minutes || 0), 0) || 0
+    const totalMinutes = allSessions?.reduce((sum, session) => {
+      if (session.duration_minutes) {
+        // For completed sessions, use the stored duration
+        return sum + session.duration_minutes
+      } else if (!session.end_time && session.start_time) {
+        // For live sessions, calculate current duration
+        const start = new Date(session.start_time)
+        const now = new Date()
+        const diffMinutes = Math.floor((now.getTime() - start.getTime()) / (1000 * 60))
+        return sum + diffMinutes
+      }
+      return sum
+    }, 0) || 0
+
     const totalHours = Math.round((totalMinutes / 60) * 10) / 10
 
     // Get average viewers across all sessions
