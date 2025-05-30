@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import { createClient } from '@supabase/supabase-js'
 
 interface StreamSession {
   id: string
@@ -55,6 +56,7 @@ export default function AdminSessions() {
   const [dateRange, setDateRange] = useState<'today' | 'week' | 'month' | 'all'>('week')
   const [sortBy, setSortBy] = useState<'start_time' | 'duration' | 'viewers'>('start_time')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  const [updatingLive, setUpdatingLive] = useState(false)
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -66,8 +68,35 @@ export default function AdminSessions() {
     if (isAdmin) {
       fetchData()
       // Set up real-time updates for live sessions
-      const interval = setInterval(fetchLiveSessions, 30000) // Update every 30 seconds
-      return () => clearInterval(interval)
+      const interval = setInterval(fetchLiveSessions, 5000) // Update every 5 seconds instead of 30
+      
+      // Subscribe to real-time updates for live sessions
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+      
+      const subscription = supabase
+        .channel('stream_sessions')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'stream_sessions',
+            filter: 'end_time=is.null'
+          },
+          (payload) => {
+            // Update the live sessions data when changes occur
+            fetchLiveSessions()
+          }
+        )
+        .subscribe()
+
+      return () => {
+        clearInterval(interval)
+        subscription.unsubscribe()
+      }
     }
   }, [isAdmin])
 
@@ -106,6 +135,7 @@ export default function AdminSessions() {
 
   const fetchLiveSessions = async () => {
     try {
+      setUpdatingLive(true)
       const response = await fetch('/api/admin/live-sessions')
       if (response.ok) {
         const data = await response.json()
@@ -113,6 +143,8 @@ export default function AdminSessions() {
       }
     } catch (error) {
       console.error('Error fetching live sessions:', error)
+    } finally {
+      setUpdatingLive(false)
     }
   }
 
@@ -286,7 +318,10 @@ export default function AdminSessions() {
               <h2 className="text-xl font-semibold text-suspect-text">Live Streams</h2>
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                <span className="text-suspect-gray-400 text-sm">Auto-refreshing every 30s</span>
+                <span className="text-suspect-gray-400 text-sm">
+                  Auto-refreshing every 5s
+                  {updatingLive && ' • Updating...'}
+                </span>
               </div>
             </div>
 
