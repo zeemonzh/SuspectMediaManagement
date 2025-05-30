@@ -285,13 +285,26 @@ class StreamTracker {
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
-    // Check for new streamers every 3 minutes
+    // Check for new streamers and remove deactivated ones every 3 minutes
     setInterval(async () => {
       const currentStreamers = await this.getActiveStreamers();
+      const currentStreamerIds = new Set(currentStreamers.map(s => s.id));
+      
+      // Start tracking new streamers
       for (const streamer of currentStreamers) {
         if (!this.activeConnections.has(streamer.id)) {
           console.log(`🆕 Found new streamer: ${streamer.tiktok_username}`);
           await this.startTracking(streamer);
+        }
+      }
+
+      // Stop tracking deactivated streamers
+      for (const [streamerId, connection] of this.activeConnections) {
+        if (!currentStreamerIds.has(streamerId)) {
+          console.log(`🛑 Streamer ${streamerId} was deactivated, stopping tracking`);
+          connection.disconnect();
+          this.endStreamSession(streamerId);
+          this.activeConnections.delete(streamerId);
         }
       }
     }, 3 * 60 * 1000);
