@@ -64,12 +64,24 @@ export async function GET(request: NextRequest) {
     
     const { data: weekSessions } = await supabase
       .from('stream_sessions')
-      .select('duration_minutes')
+      .select('duration_minutes, start_time, end_time')
       .gte('start_time', thisWeek.toISOString())
-      .not('duration_minutes', 'is', null)
 
-    const totalMinutes = weekSessions?.reduce((sum, session) => sum + (session.duration_minutes || 0), 0) || 0
-    const totalHours = Math.round(totalMinutes / 60)
+    const totalMinutes = weekSessions?.reduce((sum, session) => {
+      if (session.duration_minutes) {
+        // For completed sessions, use the stored duration
+        return sum + session.duration_minutes
+      } else if (!session.end_time && session.start_time) {
+        // For live sessions, calculate current duration
+        const start = new Date(session.start_time)
+        const now = new Date()
+        const diffMinutes = Math.floor((now.getTime() - start.getTime()) / (1000 * 60))
+        return sum + diffMinutes
+      }
+      return sum
+    }, 0) || 0
+
+    const totalHours = Math.round((totalMinutes / 60) * 10) / 10 // Round to 1 decimal place
 
     // Get average viewers this week
     const { data: viewerSessions } = await supabase
