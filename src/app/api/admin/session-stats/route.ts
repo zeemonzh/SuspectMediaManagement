@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
 
     const totalMinutes = completedSessions?.reduce((sum, session) => 
       sum + (session.duration_minutes || 0), 0) || 0
-    const totalHours = Math.round(totalMinutes / 60)
+    const totalHours = Math.round((totalMinutes / 60) * 10) / 10
 
     // Get average viewers across all sessions
     const { data: viewerSessions } = await supabase

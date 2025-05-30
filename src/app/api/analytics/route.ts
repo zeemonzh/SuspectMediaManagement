@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
       // Calculate metrics
       const totalStreams = streamerSessions.length
       const totalMinutes = streamerSessions.reduce((sum, s) => sum + (s.duration_minutes || 0), 0)
-      const totalHours = Math.round(totalMinutes / 60)
+      const totalHours = Math.round((totalMinutes / 60) * 10) / 10
       const avgViewers = totalStreams > 0 
         ? Math.round(streamerSessions.reduce((sum, s) => sum + (s.average_viewers || 0), 0) / totalStreams)
         : 0
@@ -186,7 +186,7 @@ export async function GET(request: NextRequest) {
     const allSessions = sessions || []
     const totalStreams = allSessions.length
     const totalMinutes = allSessions.reduce((sum, s) => sum + (s.duration_minutes || 0), 0)
-    const totalHours = Math.round(totalMinutes / 60)
+    const totalHours = Math.round((totalMinutes / 60) * 10) / 10
     const totalViewers = allSessions.reduce((sum, s) => sum + (s.total_viewers || 0), 0)
     const avgStreamDuration = totalStreams > 0 ? Math.round(totalMinutes / totalStreams) : 0
     const activeStreamers = new Set(allSessions.map(s => s.streamer_id)).size

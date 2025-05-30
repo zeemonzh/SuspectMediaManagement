@@ -190,7 +190,7 @@ export default function AdminDashboard() {
     },
     {
       title: 'Total Hours (Week)',
-      value: `${stats.totalHours}h`,
+      value: `${stats.totalHours.toFixed(1)}h`,
       icon: '⏱️',
       color: 'bg-indigo-500'
     },

@@ -460,7 +460,7 @@ export default function AdminAnalytics() {
               </div>
               <div>
                 <p className="text-suspect-gray-400 text-sm">Total Hours</p>
-                <p className="text-2xl font-bold text-suspect-text">{metrics?.totalHours}h</p>
+                <p className="text-2xl font-bold text-suspect-text">{metrics?.totalHours.toFixed(1)}h</p>
                 <p className={`text-sm ${(metrics?.growthRates.hours || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                   {(metrics?.growthRates.hours || 0) >= 0 ? '+' : ''}{metrics?.growthRates.hours || 0}% from last {timeframe}
                 </p>
