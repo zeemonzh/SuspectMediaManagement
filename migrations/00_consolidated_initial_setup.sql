@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS stream_sessions (
   duration_minutes INTEGER,
   peak_viewers INTEGER DEFAULT 0,
   average_viewers INTEGER DEFAULT 0,
+  current_viewers INTEGER DEFAULT 0,
   total_viewers INTEGER DEFAULT 0,
   total_likes INTEGER DEFAULT 0,
   payout_amount DECIMAL(10,2) DEFAULT 0,

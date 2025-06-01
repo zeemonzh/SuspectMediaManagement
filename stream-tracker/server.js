@@ -109,6 +109,7 @@ class StreamTracker {
           start_time: new Date().toISOString(),
           peak_viewers: 0,
           average_viewers: 0,
+          current_viewers: 0,
           total_viewers: 0,
           total_likes: 0
         })
@@ -123,7 +124,8 @@ class StreamTracker {
         viewerCounts: [],
         currentLikes: 0,
         peakViewers: 0,
-        totalViews: 0
+        totalViews: 0,
+        currentViewers: 0
       });
 
       console.log(`📺 Started session for streamer ${streamerId}`);
@@ -156,6 +158,7 @@ class StreamTracker {
 
     session.viewerCounts.push(viewerCount);
     session.peakViewers = Math.max(session.peakViewers, viewerCount);
+    session.currentViewers = viewerCount;
     
     // Calculate average viewers
     const avgViewers = Math.round(
@@ -167,7 +170,8 @@ class StreamTracker {
         .from('stream_sessions')
         .update({
           peak_viewers: session.peakViewers,
-          average_viewers: avgViewers
+          average_viewers: avgViewers,
+          current_viewers: viewerCount
         })
         .eq('id', session.sessionId);
     } catch (error) {
@@ -224,7 +228,8 @@ class StreamTracker {
           average_viewers: avgViewers,
           peak_viewers: session.peakViewers,
           total_likes: session.currentLikes,
-          total_viewers: session.totalViews
+          total_viewers: session.totalViews,
+          current_viewers: 0
         })
         .eq('id', session.sessionId);
 
