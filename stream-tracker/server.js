@@ -72,6 +72,8 @@ class StreamTracker {
       // Event listeners
       connection.on('roomUser', (data) => {
         this.updateViewerCount(id, data.viewerCount);
+        // Increment total views by 1 for each new viewer event
+        this.incrementTotalViews(id);
       });
 
       connection.on('like', (data) => {
@@ -117,12 +119,31 @@ class StreamTracker {
         startTime: new Date(),
         viewerCounts: [],
         currentLikes: 0,
-        peakViewers: 0
+        peakViewers: 0,
+        totalViews: 0
       });
 
       console.log(`📺 Started session for streamer ${streamerId}`);
     } catch (error) {
       console.error('Error creating stream session:', error);
+    }
+  }
+
+  async incrementTotalViews(streamerId) {
+    const session = this.streamSessions.get(streamerId);
+    if (!session) return;
+
+    session.totalViews += 1;
+
+    try {
+      await supabase
+        .from('stream_sessions')
+        .update({
+          total_viewers: session.totalViews
+        })
+        .eq('id', session.sessionId);
+    } catch (error) {
+      console.error('Error updating total views:', error);
     }
   }
 
@@ -134,21 +155,20 @@ class StreamTracker {
     session.peakViewers = Math.max(session.peakViewers, viewerCount);
     
     // Calculate average viewers
-      const avgViewers = Math.round(
-        session.viewerCounts.reduce((a, b) => a + b, 0) / session.viewerCounts.length
-      );
+    const avgViewers = Math.round(
+      session.viewerCounts.reduce((a, b) => a + b, 0) / session.viewerCounts.length
+    );
 
-      try {
-        await supabase
-          .from('stream_sessions')
-          .update({
-            peak_viewers: session.peakViewers,
-            average_viewers: avgViewers,
-          total_viewers: viewerCount // Update total_viewers to current viewer count
-          })
-          .eq('id', session.sessionId);
-      } catch (error) {
-        console.error('Error updating viewer count:', error);
+    try {
+      await supabase
+        .from('stream_sessions')
+        .update({
+          peak_viewers: session.peakViewers,
+          average_viewers: avgViewers
+        })
+        .eq('id', session.sessionId);
+    } catch (error) {
+      console.error('Error updating viewer count:', error);
     }
   }
 
@@ -201,7 +221,7 @@ class StreamTracker {
           average_viewers: avgViewers,
           peak_viewers: session.peakViewers,
           total_likes: session.currentLikes,
-          total_viewers: session.totalViewers
+          total_viewers: session.totalViews
         })
         .eq('id', session.sessionId);
 
