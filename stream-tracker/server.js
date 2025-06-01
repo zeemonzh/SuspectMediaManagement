@@ -72,7 +72,10 @@ class StreamTracker {
       // Event listeners
       connection.on('roomUser', (data) => {
         this.updateViewerCount(id, data.viewerCount);
-        // Increment total views by 1 for each new viewer event
+      });
+
+      connection.on('member', (data) => {
+        // Increment total views by 1 for each new member event
         this.incrementTotalViews(id);
       });
 
