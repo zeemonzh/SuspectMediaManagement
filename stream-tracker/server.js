@@ -66,9 +66,13 @@ class StreamTracker {
 
         // Set up 5-second interval to check viewer count
         const viewerCheckInterval = setInterval(() => {
-          if (connection.getState().viewerCount !== undefined) {
-            const currentViewers = connection.getState().viewerCount;
-            this.updateCurrentViewerCount(id, currentViewers);
+          const state = connection.getState();
+          console.log(`[ViewerCheck] Current state for ${tiktok_username}:`, state);
+          
+          // Only update if we have valid state data
+          if (state && typeof state.viewerCount === 'number') {
+            console.log(`[ViewerCheck] Updating viewer count for ${tiktok_username} to ${state.viewerCount}`);
+            this.updateCurrentViewerCount(id, state.viewerCount);
           }
         }, 5000);
 
@@ -84,6 +88,7 @@ class StreamTracker {
       connection.on('roomUser', (data) => {
         const viewerCount = data.viewerCount || 0;
         console.log(`[ROOM_USER_EVENT] StreamerID: ${id}, TikTok's ViewerCount: ${viewerCount}`);
+        // Immediately update viewer count when we get roomUser event
         this.updateCurrentViewerCount(id, viewerCount);
       });
 
@@ -197,7 +202,12 @@ class StreamTracker {
       return;
     }
 
-    session.viewerCountsHistory.push(currentViewerCountFromTikTok);
+    // Only add to history if the count has changed
+    const lastCount = session.viewerCountsHistory[session.viewerCountsHistory.length - 1];
+    if (lastCount !== currentViewerCountFromTikTok) {
+      session.viewerCountsHistory.push(currentViewerCountFromTikTok);
+    }
+
     const avgViewers = session.viewerCountsHistory.length > 0 ? Math.round(
       session.viewerCountsHistory.reduce((a, b) => a + b, 0) / session.viewerCountsHistory.length
     ) : 0;
@@ -207,11 +217,11 @@ class StreamTracker {
       historyLength: session.viewerCountsHistory.length,
       historyPoints: session.viewerCountsHistory,
       sum: session.viewerCountsHistory.reduce((a, b) => a + b, 0),
-      average: avgViewers
+      average: avgViewers,
+      currentCount: currentViewerCountFromTikTok
     });
 
     try {
-      console.log(`[updateCurrentViewerCount] Updating Supabase for session ${session.sessionId} with: peak: ${Math.max(...session.viewerCountsHistory, 0)}, avg: ${avgViewers}, current: ${currentViewerCountFromTikTok}`);
       await supabase
         .from('stream_sessions')
         .update({
@@ -220,7 +230,7 @@ class StreamTracker {
           current_viewers: currentViewerCountFromTikTok
         })
         .eq('id', session.sessionId);
-      console.log(`[updateCurrentViewerCount] Supabase update successful for session ${session.sessionId}`);
+      console.log(`[updateCurrentViewerCount] Successfully updated viewer counts in database. Current: ${currentViewerCountFromTikTok}, Avg: ${avgViewers}`);
     } catch (error) {
       console.error(`[updateCurrentViewerCount] Error updating Supabase for session ${session.sessionId}:`, error);
     }
