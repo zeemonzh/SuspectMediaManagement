@@ -74,14 +74,12 @@ class StreamTracker {
         const viewerCount = data.viewerCount || 0;
         console.log(`[ROOM_USER_EVENT] StreamerID: ${id}, TikTok's ViewerCount: ${viewerCount}`);
         this.updateCurrentViewerCount(id, viewerCount);
-        // Also update total viewers if current count is higher
-        this.updateTotalViewers(id, viewerCount);
       });
 
       connection.on('member', (data) => {
-        // Still track individual joins as backup
+        // Count every join as a view, even rejoins
         console.log(`[MEMBER_JOIN_EVENT] StreamerID: ${id}, UserID: ${data.userId}, Username: ${data.uniqueId}`);
-        this.handleUniqueViewerJoin(id, data.userId);
+        this.handleViewCount(id, data.userId, data.uniqueId);
       });
 
       connection.on('like', (data) => {
@@ -116,7 +114,7 @@ class StreamTracker {
           peak_viewers: 0,
           average_viewers: 0,
           current_viewers: 0,
-          total_viewers: 0, // Counts unique users who joined
+          total_viewers: 0, // Now represents total views instead of unique viewers
           total_likes: 0
         })
         .select()
@@ -131,10 +129,8 @@ class StreamTracker {
         sessionId: data.id,
         startTime: new Date(),
         viewerCountsHistory: [], // For calculating average viewers
-        uniqueJoinedUserIds: new Set(), // Tracks unique users for total_viewers
-        currentLikes: 0,
-        // peakViewers will be handled by handleUniqueViewerJoin
-        // currentViewers will be handled by updateCurrentViewerCount
+        total_views: 0, // New counter for total views
+        currentLikes: 0
       });
 
       console.log(`[createStreamSession] Session created for StreamerID: ${streamerId}, SessionID: ${data.id}`);
@@ -143,39 +139,32 @@ class StreamTracker {
     }
   }
 
-  async handleUniqueViewerJoin(streamerId, userId) {
-    console.log(`[handleUniqueViewerJoin] Called for StreamerID: ${streamerId}, UserID: ${userId}`);
+  async handleViewCount(streamerId, userId, username) {
     const session = this.streamSessions.get(streamerId);
     if (!session) {
-      console.error(`[handleUniqueViewerJoin] Session not found for StreamerID: ${streamerId}`);
+      console.error(`[handleViewCount] Session not found for StreamerID: ${streamerId}`);
       return;
     }
-    console.log(`[handleUniqueViewerJoin] Session found. Current uniqueJoinedUserIds size: ${session.uniqueJoinedUserIds.size}`);
 
-    if (!session.uniqueJoinedUserIds.has(userId)) {
-      console.log(`[handleUniqueViewerJoin] UserID: ${userId} is new. Adding to uniqueJoinedUserIds.`);
-      session.uniqueJoinedUserIds.add(userId);
-      const totalViewers = session.uniqueJoinedUserIds.size;
-      // peak_viewers should be based on current_viewers from roomUser, so we don't set it here directly from total unique joins.
-      // current_viewers is updated by updateCurrentViewerCount.
+    // Initialize total_views if not exists
+    if (!session.total_views) {
+      session.total_views = 0;
+    }
 
-      console.log(`[handleUniqueViewerJoin] UserID: ${userId} added. New total_viewers: ${totalViewers}`);
+    // Increment view count for every join
+    session.total_views++;
+    console.log(`[handleViewCount] New view from ${username || 'unknown'} (${userId}). Total views: ${session.total_views}`);
 
-      try {
-        console.log(`[handleUniqueViewerJoin] Updating Supabase for session ${session.sessionId} with: total_viewers: ${totalViewers}`);
-        await supabase
-          .from('stream_sessions')
-          .update({
-            total_viewers: totalViewers
-            // peak_viewers and current_viewers are handled by updateCurrentViewerCount
-          })
-          .eq('id', session.sessionId);
-        console.log(`[handleUniqueViewerJoin] Supabase update successful for total_viewers for session ${session.sessionId}`);
-      } catch (error) {
-        console.error(`[handleUniqueViewerJoin] Error updating Supabase for total_viewers for session ${session.sessionId}:`, error);
-      }
-    } else {
-      console.log(`[handleUniqueViewerJoin] UserID: ${userId} already in uniqueJoinedUserIds. No change to total_viewers.`);
+    try {
+      await supabase
+        .from('stream_sessions')
+        .update({
+          total_viewers: session.total_views // Repurposing total_viewers field to store total views
+        })
+        .eq('id', session.sessionId);
+      console.log(`[handleViewCount] Successfully updated total views to ${session.total_views}`);
+    } catch (error) {
+      console.error(`[handleViewCount] Error updating total views:`, error);
     }
   }
 
@@ -261,7 +250,7 @@ class StreamTracker {
           average_viewers: avgViewers,
           peak_viewers: session.peakViewers,
           total_likes: session.currentLikes,
-          total_viewers: session.uniqueJoinedUserIds.size,
+          total_viewers: session.total_views,
           current_viewers: 0
         })
         .eq('id', session.sessionId);
@@ -320,8 +309,8 @@ class StreamTracker {
       return;
     }
 
-    // Get current total from uniqueJoinedUserIds
-    const currentTotal = session.uniqueJoinedUserIds.size;
+    // Get current total from total_views
+    const currentTotal = session.total_views;
     
     // If current viewer count is higher than our tracked total, update the total
     if (currentViewerCount > currentTotal) {
@@ -335,12 +324,6 @@ class StreamTracker {
           })
           .eq('id', session.sessionId);
           
-        // Add placeholder IDs to match the count
-        const difference = currentViewerCount - currentTotal;
-        for (let i = 0; i < difference; i++) {
-          session.uniqueJoinedUserIds.add(`auto_viewer_${Date.now()}_${i}`);
-        }
-        
         console.log(`[updateTotalViewers] Successfully updated total viewers to ${currentViewerCount}`);
       } catch (error) {
         console.error(`[updateTotalViewers] Error updating total viewers:`, error);
