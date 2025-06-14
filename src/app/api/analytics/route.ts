@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
     // Get all streamers (not admins)
     const { data: allStreamers } = await supabase
       .from('streamers')
-      .select('id, username, tiktok_username')
+      .select('id, username, tiktok_username, is_active')
       .eq('role', 'streamer')
       .eq('is_active', true)
     
@@ -189,7 +189,7 @@ export async function GET(request: NextRequest) {
     const totalHours = Math.round((totalMinutes / 60) * 10) / 10
     const totalViewers = allSessions.reduce((sum, s) => sum + (s.total_viewers || 0), 0)
     const avgStreamDuration = totalStreams > 0 ? Math.round(totalMinutes / totalStreams) : 0
-    const activeStreamers = new Set(allSessions.map(s => s.streamer_id)).size
+    const activeStreamers = allStreamers.filter(s => s.is_active === true).length
     
     // Count monthly goal completions
     const monthlyGoalCompletions = streamerAnalytics.reduce((sum, s) => {
@@ -198,6 +198,8 @@ export async function GET(request: NextRequest) {
     
     // Calculate growth rates compared to previous period
     const previousPeriodStart = new Date(startDate.getTime() - (now.getTime() - startDate.getTime()))
+
+    // Get previous period sessions data
     const { data: previousSessions } = await supabase
       .from('stream_sessions')
       .select('id, duration_minutes, peak_viewers, streamer_id')
@@ -209,7 +211,16 @@ export async function GET(request: NextRequest) {
     const prevTotalMinutes = previousSessions?.reduce((sum, s) => sum + (s.duration_minutes || 0), 0) || 0
     const prevTotalHours = Math.round(prevTotalMinutes / 60)
     const prevTotalViewers = previousSessions?.reduce((sum, s) => sum + (s.peak_viewers || 0), 0) || 0
-    const prevActiveStreamers = previousSessions ? new Set(previousSessions.map(s => s.streamer_id)).size : 0
+
+    // Get previous period active streamers
+    const { data: previousStreamers } = await supabase
+      .from('streamers')
+      .select('id, is_active')
+      .eq('role', 'streamer')
+      .eq('is_active', true)
+      .lte('created_at', previousPeriodStart.toISOString())
+
+    const prevActiveStreamers = previousStreamers?.length || 0
     
     // Calculate growth percentages
     const growthRates = {
