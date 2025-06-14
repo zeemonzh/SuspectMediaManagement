@@ -63,6 +63,17 @@ class StreamTracker {
         
         // Create new stream session
         this.createStreamSession(id);
+
+        // Set up 5-second interval to check viewer count
+        const viewerCheckInterval = setInterval(() => {
+          if (connection.getState().viewerCount !== undefined) {
+            const currentViewers = connection.getState().viewerCount;
+            this.updateCurrentViewerCount(id, currentViewers);
+          }
+        }, 5000);
+
+        // Store interval ID for cleanup
+        this.activeConnections.set(id, { connection, viewerCheckInterval });
         
       }).catch(err => {
         console.error(`❌ Failed to connect to ${tiktok_username}:`, err);
@@ -88,12 +99,22 @@ class StreamTracker {
 
       connection.on('streamEnd', () => {
         console.log(`🔴 Stream ended for ${tiktok_username}`);
+        // Clear the interval when stream ends
+        const { viewerCheckInterval } = this.activeConnections.get(id);
+        if (viewerCheckInterval) {
+          clearInterval(viewerCheckInterval);
+        }
         this.endStreamSession(id);
         this.activeConnections.delete(id);
       });
 
       connection.on('disconnect', () => {
         console.log(`📡 Disconnected from ${tiktok_username}`);
+        // Clear the interval on disconnect
+        const { viewerCheckInterval } = this.activeConnections.get(id);
+        if (viewerCheckInterval) {
+          clearInterval(viewerCheckInterval);
+        }
         this.endStreamSession(id);
         this.activeConnections.delete(id);
       });
@@ -177,20 +198,24 @@ class StreamTracker {
     }
 
     session.viewerCountsHistory.push(currentViewerCountFromTikTok);
-    const peakViewers = Math.max(...session.viewerCountsHistory, 0); // Calculate peak from history
-
-    // Calculate average viewers
     const avgViewers = session.viewerCountsHistory.length > 0 ? Math.round(
       session.viewerCountsHistory.reduce((a, b) => a + b, 0) / session.viewerCountsHistory.length
     ) : 0;
-    console.log(`[updateCurrentViewerCount] Calculated: peakViewers: ${peakViewers}, avgViewers: ${avgViewers}`);
+
+    // Add detailed logging
+    console.log(`[updateCurrentViewerCount] ViewerCount History:`, {
+      historyLength: session.viewerCountsHistory.length,
+      historyPoints: session.viewerCountsHistory,
+      sum: session.viewerCountsHistory.reduce((a, b) => a + b, 0),
+      average: avgViewers
+    });
 
     try {
-      console.log(`[updateCurrentViewerCount] Updating Supabase for session ${session.sessionId} with: peak: ${peakViewers}, avg: ${avgViewers}, current: ${currentViewerCountFromTikTok}`);
+      console.log(`[updateCurrentViewerCount] Updating Supabase for session ${session.sessionId} with: peak: ${Math.max(...session.viewerCountsHistory, 0)}, avg: ${avgViewers}, current: ${currentViewerCountFromTikTok}`);
       await supabase
         .from('stream_sessions')
         .update({
-          peak_viewers: peakViewers,
+          peak_viewers: Math.max(...session.viewerCountsHistory, 0),
           average_viewers: avgViewers,
           current_viewers: currentViewerCountFromTikTok
         })
@@ -362,9 +387,12 @@ class StreamTracker {
       }
 
       // Stop tracking deactivated streamers
-      for (const [streamerId, connection] of this.activeConnections) {
+      for (const [streamerId, { connection, viewerCheckInterval }] of this.activeConnections) {
         if (!currentStreamerIds.has(streamerId)) {
           console.log(`🛑 Streamer ${streamerId} was deactivated, stopping tracking`);
+          if (viewerCheckInterval) {
+            clearInterval(viewerCheckInterval);
+          }
           connection.disconnect();
           this.endStreamSession(streamerId);
           this.activeConnections.delete(streamerId);
@@ -404,7 +432,10 @@ class StreamTracker {
 
   stop() {
     console.log('🛑 Stopping stream tracker...');
-    for (const [streamerId, connection] of this.activeConnections) {
+    for (const [streamerId, { connection, viewerCheckInterval }] of this.activeConnections) {
+      if (viewerCheckInterval) {
+        clearInterval(viewerCheckInterval);
+      }
       connection.disconnect();
       this.endStreamSession(streamerId);
     }
