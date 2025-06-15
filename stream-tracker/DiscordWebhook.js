@@ -23,22 +23,30 @@ class DiscordWebhook {
 
   async notifyStreamStart(streamerUsername, tiktokUsername) {
     const content = {
+      content: "<@&1369742622708727868>",
       embeds: [{
-        title: '🔴 Stream Started',
-        description: `**${streamerUsername}** just went live!`,
-        color: 0xFF0000, // Red color
+        title: '🎥 Stream Started',
+        description: `**[${streamerUsername}](https://www.tiktok.com/@${tiktokUsername}/live)** just went live!`,
+        color: 0x57F287, // Discord green
+        thumbnail: {
+          url: "https://cdn.discordapp.com/emojis/1012900547269664858.gif" // You might want to replace this with your own animated streaming icon
+        },
         fields: [
           {
-            name: 'TikTok Username',
-            value: `@${tiktokUsername}`,
+            name: '🎯 Platform',
+            value: 'TikTok',
             inline: true
           },
           {
-            name: 'Stream Link',
-            value: `[Watch on TikTok](https://www.tiktok.com/@${tiktokUsername}/live)`,
+            name: '👤 Username',
+            value: `[@${tiktokUsername}](https://www.tiktok.com/@${tiktokUsername}/live)`,
             inline: true
           }
         ],
+        footer: {
+          text: '🔴 Live Now',
+          icon_url: "https://cdn.discordapp.com/emojis/1012900547269664858.gif" // Optional: streaming icon
+        },
         timestamp: new Date().toISOString()
       }]
     };
@@ -54,27 +62,35 @@ class DiscordWebhook {
       : `${minutes}m`;
 
     const content = {
+      content: "<@&1369742622708727868>",
       embeds: [{
-        title: '⏹️ Stream Ended',
-        description: `**${streamerUsername}**'s stream has ended`,
-        color: 0x00FF00, // Green color
+        title: '📡 Stream Ended',
+        description: `**${streamerUsername}**'s stream has concluded`,
+        color: 0xED4245, // Discord red
+        thumbnail: {
+          url: "https://cdn.discordapp.com/emojis/1012900585748676628.gif" // You might want to replace this with your own end stream icon
+        },
         fields: [
           {
-            name: 'TikTok Username',
-            value: `@${tiktokUsername}`,
+            name: '👤 Streamer',
+            value: `[@${tiktokUsername}](https://www.tiktok.com/@${tiktokUsername})`,
             inline: true
           },
           {
-            name: 'Duration',
+            name: '⏱️ Duration',
             value: durationStr,
             inline: true
           },
           {
-            name: 'Total Views',
+            name: '👥 Total Views',
             value: totalViews.toLocaleString(),
             inline: true
           }
         ],
+        footer: {
+          text: '⚫ Stream Ended',
+          icon_url: "https://cdn.discordapp.com/emojis/1012900585748676628.gif" // Optional: end stream icon
+        },
         timestamp: new Date().toISOString()
       }]
     };
