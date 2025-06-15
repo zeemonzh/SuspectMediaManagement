@@ -4,7 +4,8 @@
   "description": "TikTok stream tracking service",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "echo \"No tests specified\" && exit 0"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
