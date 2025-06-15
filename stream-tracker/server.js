@@ -3,7 +3,8 @@ require('dotenv').config();
 
 const { WebcastPushConnection } = require('tiktok-live-connector');
 const { createClient } = require('@supabase/supabase-js');
-const { DiscordWebhook } = require('../src/services/DiscordWebhook');
+const DiscordWebhook = require('./DiscordWebhook');
+const fetch = require('node-fetch');
 
 // Supabase configuration
 const supabaseUrl = process.env.SUPABASE_URL;
