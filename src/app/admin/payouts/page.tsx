@@ -24,7 +24,9 @@ interface Payout {
   duration_minutes?: number
   meets_time_goal?: boolean
   meets_viewer_goal?: boolean
+  payment_method: 'paypal' | 'ltc'
   paypal_username?: string
+  ltc_address?: string
 }
 
 export default function AdminPayouts() {
@@ -94,7 +96,7 @@ export default function AdminPayouts() {
   })
 
   const totalPending = payouts.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0)
-  const totalPaid = payouts.filter(p => p.status === 'paid' || p.status === 'approved').reduce((sum, p) => sum + p.amount, 0)
+  const totalPaid = payouts.filter(p => p.status === 'paid').reduce((sum, p) => sum + p.amount, 0)
 
   const showAlert = (title: string, message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
     setAlertDialog({ isOpen: true, title, message, type })
@@ -123,8 +125,10 @@ export default function AdminPayouts() {
     }
   }
 
-  const handlePayPalPayment = (payout: Payout) => {
-    window.open(`https://paypal.me/${payout.paypal_username}/${payout.amount}`, '_blank')
+  const handlePayment = (payout: Payout) => {
+    if (payout.payment_method === 'paypal' && payout.paypal_username) {
+      window.open(`https://paypal.me/${payout.paypal_username}/${payout.amount}`, '_blank')
+    }
     setPaymentConfirmDialog({
       isOpen: true,
       payout
@@ -166,7 +170,7 @@ export default function AdminPayouts() {
           <div>
             <h1 className="text-3xl font-bold text-suspect-text">Payout Management</h1>
             <p className="text-suspect-gray-400 mt-2">
-              Review streamer payout requests → Approve/Deny → Process payments via PayPal
+              Review streamer payout requests → Approve/Deny → Process payments via PayPal or LTC
             </p>
           </div>
         </div>
@@ -177,7 +181,7 @@ export default function AdminPayouts() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div className="flex items-center space-x-2">
               <span className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-xs">1</span>
-              <span className="text-suspect-gray-300">Streamers request payouts (with PayPal username)</span>
+              <span className="text-suspect-gray-300">Streamers request payouts (PayPal or LTC)</span>
             </div>
             <div className="flex items-center space-x-2">
               <span className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-xs">2</span>
@@ -185,7 +189,7 @@ export default function AdminPayouts() {
             </div>
             <div className="flex items-center space-x-2">
               <span className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-xs">3</span>
-              <span className="text-suspect-gray-300">Superadmin clicks "Pay via PayPal" to send money</span>
+              <span className="text-suspect-gray-300">Superadmin processes payment via selected method</span>
             </div>
           </div>
         </div>
@@ -253,7 +257,7 @@ export default function AdminPayouts() {
                 <thead className="sticky top-0 bg-suspect-header z-10">
                   <tr className="border-b border-suspect-gray-700">
                     <th className="text-left text-suspect-gray-400 py-3 px-4">Streamer</th>
-                    <th className="text-left text-suspect-gray-400 py-3 px-4">PayPal</th>
+                    <th className="text-left text-suspect-gray-400 py-3 px-4">Payment Info</th>
                     <th className="text-left text-suspect-gray-400 py-3 px-4">Amount</th>
                     <th className="text-left text-suspect-gray-400 py-3 px-4">Status</th>
                     <th className="text-left text-suspect-gray-400 py-3 px-4">Stream Info</th>
@@ -277,14 +281,28 @@ export default function AdminPayouts() {
                         )}
                       </td>
                       <td className="text-suspect-text py-4 px-4">
-                        {payout.paypal_username ? (
-                          <span className="text-sm font-mono bg-gray-800 px-2 py-1 rounded">
-                            {payout.paypal_username}
-                          </span>
+                        {payout.payment_method === 'paypal' ? (
+                          payout.paypal_username ? (
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm font-mono bg-gray-800 px-2 py-1 rounded">
+                                {payout.paypal_username}
+                              </span>
+                              <span className="text-blue-400">PayPal</span>
+                            </div>
+                          ) : (
+                            <span className="text-suspect-gray-500 text-sm">PayPal not provided</span>
+                          )
                         ) : (
-                          <span className="text-suspect-gray-500 text-sm">
-                            {payout.type === 'legacy' ? 'Legacy payout' : 'Not provided'}
-                          </span>
+                          payout.ltc_address ? (
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm font-mono bg-gray-800 px-2 py-1 rounded">
+                                {payout.ltc_address}
+                              </span>
+                              <span className="text-yellow-400">LTC</span>
+                            </div>
+                          ) : (
+                            <span className="text-suspect-gray-500 text-sm">LTC address not provided</span>
+                          )
                         )}
                       </td>
                       <td className="text-suspect-text py-4 px-4">
@@ -292,8 +310,10 @@ export default function AdminPayouts() {
                       </td>
                       <td className="py-4 px-4">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          payout.status === 'paid' || payout.status === 'approved'
+                          payout.status === 'paid'
                             ? 'bg-green-100 text-green-800'
+                            : payout.status === 'approved'
+                            ? 'bg-blue-100 text-blue-800'
                             : payout.status === 'denied'
                             ? 'bg-red-100 text-red-800'
                             : 'bg-yellow-100 text-yellow-800'
@@ -304,11 +324,8 @@ export default function AdminPayouts() {
                       <td className="text-suspect-gray-400 py-4 px-4">
                         {payout.type === 'request' ? (
                           <div className="text-xs">
-                            {payout.duration_minutes && (
-                              <div>⏱️ {Math.floor(payout.duration_minutes / 60)}h {payout.duration_minutes % 60}m</div>
-                            )}
                             {payout.meets_time_goal !== undefined && (
-                              <div className="flex space-x-1 mt-1">
+                              <div className="flex space-x-1">
                                 <span className={payout.meets_time_goal ? 'text-green-400' : 'text-red-400'}>
                                   {payout.meets_time_goal ? '✓' : '✗'} Time
                                 </span>
@@ -332,29 +349,37 @@ export default function AdminPayouts() {
                       </td>
                       <td className="py-4 px-4">
                         <div className="flex space-x-2">
-                          {payout.status === 'pending' ? (
+                          {payout.status === 'pending' && (
                             <>
                               <button
                                 onClick={() => handleStatusUpdate(payout.id, 'approved')}
-                                className="text-green-400 hover:text-green-300 text-sm font-medium"
+                                className="text-green-400 hover:text-green-300 text-sm"
                               >
-                                ✓ Approve
+                                ✅ Approve
                               </button>
                               <button
                                 onClick={() => handleStatusUpdate(payout.id, 'denied')}
-                                className="text-red-400 hover:text-red-300 text-sm font-medium"
+                                className="text-red-400 hover:text-red-300 text-sm"
                               >
-                                ✗ Deny
+                                ❌ Deny
                               </button>
                             </>
-                          ) : payout.status === 'approved' ? (
+                          )}
+                          {payout.status === 'approved' && (
                             <div className="flex space-x-2">
-                              {payout.paypal_username ? (
+                              {payout.payment_method === 'paypal' && payout.paypal_username ? (
                                 <button
-                                  onClick={() => handlePayPalPayment(payout)}
+                                  onClick={() => handlePayment(payout)}
                                   className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded text-sm font-medium"
                                 >
                                   💰 Pay via PayPal
+                                </button>
+                              ) : payout.payment_method === 'ltc' && payout.ltc_address ? (
+                                <button
+                                  onClick={() => handlePayment(payout)}
+                                  className="bg-yellow-600 hover:bg-yellow-500 text-white px-3 py-1 rounded text-sm font-medium"
+                                >
+                                  ⚡ Pay via LTC
                                 </button>
                               ) : (
                                 <button
@@ -365,16 +390,17 @@ export default function AdminPayouts() {
                                 </button>
                               )}
                             </div>
-                          ) : payout.status === 'denied' ? (
+                          )}
+                          {payout.status === 'denied' ? (
                             <button
                               onClick={() => handleStatusUpdate(payout.id, 'pending')}
                               className="text-yellow-400 hover:text-yellow-300 text-sm"
                             >
                               🔄 Reopen
                             </button>
-                          ) : (
+                          ) : payout.status === 'paid' ? (
                             <span className="text-green-500 text-sm font-medium">✅ Paid</span>
-                          )}
+                          ) : null}
                         </div>
                       </td>
                     </tr>
@@ -417,9 +443,9 @@ export default function AdminPayouts() {
           }
           setPaymentConfirmDialog(prev => ({ ...prev, isOpen: false }))
         }}
-        title="Confirm PayPal Payment"
+        title="Confirm Payment"
         message={paymentConfirmDialog.payout ? 
-          `Did you successfully send $${paymentConfirmDialog.payout.amount} to ${paymentConfirmDialog.payout.streamer_username} via PayPal?\n\nClick Confirm only after you've completed the payment.` 
+          `Did you successfully send $${paymentConfirmDialog.payout.amount} to ${paymentConfirmDialog.payout.streamer_username} via ${paymentConfirmDialog.payout.payment_method === 'paypal' ? 'PayPal' : 'LTC'}?\n\nClick Confirm only after you've completed the payment.` 
           : 'Confirm payment completion'
         }
         confirmText="Confirm Payment"

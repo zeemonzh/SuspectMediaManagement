@@ -26,7 +26,9 @@ interface AdminPayout {
   duration_minutes?: number
   meets_time_goal?: boolean
   meets_viewer_goal?: boolean
+  payment_method: 'paypal' | 'ltc'
   paypal_username?: string
+  ltc_address?: string
 }
 
 export async function GET(request: NextRequest) {
@@ -74,7 +76,9 @@ export async function GET(request: NextRequest) {
           duration_minutes: request.duration_minutes,
           meets_time_goal: request.meets_time_goal,
           meets_viewer_goal: request.meets_viewer_goal,
-          paypal_username: request.paypal_username
+          payment_method: request.payment_method || 'paypal',
+          paypal_username: request.paypal_username,
+          ltc_address: request.ltc_address
         })
       })
     }
@@ -108,7 +112,8 @@ export async function GET(request: NextRequest) {
           admin_notes: payout.admin_notes,
           paid_at: payout.paid_at,
           created_at: payout.created_at,
-          type: 'legacy'
+          type: 'legacy',
+          payment_method: 'paypal'
         })
       })
     }

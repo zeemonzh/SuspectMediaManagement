@@ -49,13 +49,48 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { streamer_id, stream_session_id, paypal_username } = body
+    const { 
+      streamer_id, 
+      stream_session_id, 
+      payment_method,
+      paypal_username,
+      ltc_address 
+    } = body
 
-    console.log('Creating payout request:', { streamer_id, stream_session_id, paypal_username })
+    console.log('Creating payout request:', { 
+      streamer_id, 
+      stream_session_id, 
+      payment_method,
+      paypal_username,
+      ltc_address 
+    })
 
-    if (!streamer_id || !stream_session_id || !paypal_username) {
+    if (!streamer_id || !stream_session_id || !payment_method) {
       return NextResponse.json(
-        { error: 'Streamer ID, Stream Session ID, and PayPal username are required' },
+        { error: 'Streamer ID, Stream Session ID, and payment method are required' },
+        { status: 400 }
+      )
+    }
+
+    // Validate payment info based on method
+    if (payment_method === 'paypal' && !paypal_username) {
+      return NextResponse.json(
+        { error: 'PayPal username is required for PayPal payments' },
+        { status: 400 }
+      )
+    }
+
+    if (payment_method === 'ltc' && !ltc_address) {
+      return NextResponse.json(
+        { error: 'LTC address is required for Litecoin payments' },
+        { status: 400 }
+      )
+    }
+
+    // Validate LTC address format
+    if (payment_method === 'ltc' && !/^[LM3][a-km-zA-HJ-NP-Z1-9]{26,33}$/.test(ltc_address)) {
+      return NextResponse.json(
+        { error: 'Invalid LTC address format' },
         { status: 400 }
       )
     }
@@ -121,11 +156,12 @@ export async function POST(request: NextRequest) {
       stream_session_id,
       requested_amount: session.payout_amount || 0,
       duration_minutes: session.duration_minutes || 0,
-      peak_viewers: session.peak_viewers || 0,
-      average_viewers: session.average_viewers || 0,
+      total_viewers: session.total_viewers || 0,
       meets_time_goal: session.meets_time_goal || false,
       meets_viewer_goal: session.meets_viewer_goal || false,
-      paypal_username: paypal_username.trim(),
+      payment_method,
+      paypal_username: payment_method === 'paypal' && paypal_username ? paypal_username.trim() : null,
+      ltc_address: payment_method === 'ltc' && ltc_address ? ltc_address.trim() : null,
       status: 'pending'
     }
 

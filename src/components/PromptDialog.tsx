@@ -6,7 +6,7 @@ interface PromptDialogProps {
   onClose: () => void
   onSubmit: (value: string) => void
   title: string
-  message?: string
+  message: string | React.ReactNode
   placeholder?: string
   defaultValue?: string
   submitText?: string
@@ -28,7 +28,7 @@ const PromptDialog: React.FC<PromptDialogProps> = ({
   type = 'text',
   validation
 }) => {
-  const [value, setValue] = useState(defaultValue)
+  const [value, setValue] = useState(defaultValue || '')
   const [error, setError] = useState<string>()
 
   const handleSubmit = () => {
@@ -63,7 +63,7 @@ const PromptDialog: React.FC<PromptDialogProps> = ({
       <button
         onClick={handleSubmit}
         className="btn-primary"
-        disabled={!value.trim()}
+        disabled={!value || !value.trim()}
       >
         {submitText}
       </button>

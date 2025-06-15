@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
@@ -8,24 +8,40 @@ import LoadingSpinner from '@/components/LoadingSpinner'
 import AlertDialog from '@/components/AlertDialog'
 import PromptDialog from '@/components/PromptDialog'
 
+interface Streamer {
+  id: string
+  username: string
+  tiktok_username: string
+  email: string
+  role: string
+  is_active: boolean
+  created_at: string
+  paypal_username?: string
+  ltc_address?: string
+  preferred_payment_method?: 'paypal' | 'ltc'
+}
+
 interface StreamSession {
   id: string
   start_time: string
-  end_time: string
+  end_time?: string
   duration_minutes: number
-  peak_viewers: number
-  average_viewers: number
   total_viewers: number
+  total_likes: number
   payout_amount: number
   meets_time_goal: boolean
   meets_viewer_goal: boolean
   payout_requested: boolean
-  payout_requests: {
-    id: string
-    status: string
-    requested_amount: number
-    created_at: string
-  }[]
+  payout_requests: PayoutRequest[]
+}
+
+interface PayoutRequest {
+  id: string
+  status: 'pending' | 'approved' | 'denied' | 'paid'
+  requested_amount: number
+  payment_method: 'paypal' | 'ltc'
+  paypal_username?: string
+  ltc_address?: string
 }
 
 interface StreamerGoals {
@@ -77,12 +93,14 @@ export default function StreamerDashboard() {
     type: 'info'
   })
 
-  const [paypalDialog, setPaypalDialog] = useState<{
+  const [payoutDialog, setPayoutDialog] = useState<{
     isOpen: boolean
     sessionId: string
+    paymentMethod: 'paypal' | 'ltc'
   }>({
     isOpen: false,
-    sessionId: ''
+    sessionId: '',
+    paymentMethod: streamer?.preferred_payment_method || 'paypal'
   })
 
   useEffect(() => {
@@ -182,13 +200,14 @@ export default function StreamerDashboard() {
   }
 
   const requestPayout = async (sessionId: string) => {
-    setPaypalDialog({
+    setPayoutDialog({
       isOpen: true,
-      sessionId
+      sessionId,
+      paymentMethod: streamer?.preferred_payment_method || 'paypal'
     })
   }
 
-  const handlePaypalSubmit = async (paypalUsername: string) => {
+  const handlePayoutSubmit = async (paymentInfo: string) => {
     try {
       const response = await fetch('/api/payout-requests', {
         method: 'POST',
@@ -197,15 +216,17 @@ export default function StreamerDashboard() {
         },
         body: JSON.stringify({
           streamer_id: streamer?.id,
-          stream_session_id: paypalDialog.sessionId,
-          paypal_username: paypalUsername.trim()
+          stream_session_id: payoutDialog.sessionId,
+          payment_method: payoutDialog.paymentMethod,
+          paypal_username: payoutDialog.paymentMethod === 'paypal' ? paymentInfo.trim() : undefined,
+          ltc_address: payoutDialog.paymentMethod === 'ltc' ? paymentInfo.trim() : undefined
         })
       })
 
       if (response.ok) {
         showAlert(
           'Success',
-          'Payout request submitted successfully!\nYou will receive payment at: ' + paypalUsername,
+          `Payout request submitted successfully!\nYou will receive payment at:\n${paymentInfo.slice(0, 20)}${paymentInfo.length > 20 ? '...' : ''}`,
           'success'
         )
         fetchStreamSessions()
@@ -619,19 +640,46 @@ export default function StreamerDashboard() {
         type={alertDialog.type}
       />
 
-      {/* PayPal Input Dialog */}
+      {/* Payout Request Dialog */}
       <PromptDialog
-        isOpen={paypalDialog.isOpen}
-        onClose={() => setPaypalDialog(prev => ({ ...prev, isOpen: false }))}
-        onSubmit={handlePaypalSubmit}
-        title="Enter PayPal Details"
-        message="Please enter your PayPal username for payment. This will be used to send your payout directly via PayPal."
-        placeholder="PayPal username"
-        defaultValue={streamer?.paypal_username || ''}
+        isOpen={payoutDialog.isOpen}
+        onClose={() => setPayoutDialog(prev => ({ ...prev, isOpen: false }))}
+        onSubmit={handlePayoutSubmit}
+        title="Enter Payment Details"
+        message={
+          <div className="space-y-4">
+            <div>
+              <label className="block text-suspect-text mb-2">Payment Method</label>
+              <select
+                className="w-full bg-suspect-dark border border-suspect-gray-700 rounded-lg px-3 py-2 text-suspect-text"
+                value={payoutDialog.paymentMethod}
+                onChange={(e) => setPayoutDialog(prev => ({ ...prev, paymentMethod: e.target.value as 'paypal' | 'ltc' }))}
+              >
+                <option value="paypal">PayPal</option>
+                <option value="ltc">Litecoin (LTC)</option>
+              </select>
+            </div>
+            <p className="text-suspect-gray-400">
+              {payoutDialog.paymentMethod === 'paypal' 
+                ? "Please enter your PayPal username for payment. This will be used to send your payout directly via PayPal."
+                : "Please enter your Litecoin (LTC) address. Make sure to double-check the address as crypto transactions cannot be reversed."}
+            </p>
+          </div>
+        }
+        placeholder={payoutDialog.paymentMethod === 'paypal' ? "PayPal username" : "LTC address"}
+        defaultValue={payoutDialog.paymentMethod === 'paypal' ? streamer?.paypal_username : streamer?.ltc_address}
         submitText="Submit Request"
         type="text"
         validation={(value) => {
-          if (!value.trim()) return 'PayPal username is required'
+          if (!value || !value.trim()) {
+            return payoutDialog.paymentMethod === 'paypal' 
+              ? 'PayPal username is required'
+              : 'LTC address is required'
+          }
+          if (payoutDialog.paymentMethod === 'ltc' && !/^[LM3][a-km-zA-HJ-NP-Z1-9]{26,33}$/.test(value.trim())) {
+            return 'Invalid LTC address format'
+          }
+          return undefined
         }}
       />
     </div>

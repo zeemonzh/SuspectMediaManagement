@@ -3,7 +3,19 @@
 import { createContext, useContext, useEffect, useState, useRef } from 'react'
 import { createSupabaseBrowserClient } from '@/lib/supabase'
 import type { User } from '@supabase/supabase-js'
-import type { Streamer } from '@/lib/supabase'
+
+interface Streamer {
+  id: string
+  username: string
+  tiktok_username: string
+  email: string
+  role: string
+  is_active: boolean
+  created_at: string
+  paypal_username?: string
+  ltc_address?: string
+  preferred_payment_method?: 'paypal' | 'ltc'
+}
 
 interface AuthContextType {
   user: User | null
