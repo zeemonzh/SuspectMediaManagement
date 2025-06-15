@@ -24,6 +24,7 @@ interface SecuritySettings {
   require_2fa: boolean
   max_login_attempts: number
   account_lockout_duration_minutes: number
+  discord_webhook_url?: string
 }
 
 interface ActivityLog {
@@ -323,6 +324,7 @@ export default function AdminSettings() {
   }
 
   const saveSecuritySettings = async () => {
+    setLoading(true)
     try {
       const response = await fetch('/api/admin/security-settings', {
         method: 'POST',
@@ -333,15 +335,15 @@ export default function AdminSettings() {
       })
 
       if (response.ok) {
-        showAlert('Success', 'Security settings saved successfully!', 'success')
+        showAlert('Success', 'Security settings updated successfully', 'success')
       } else {
-        const error = await response.json()
-        showAlert('Error', `Error saving settings: ${error.error}`, 'error')
+        showAlert('Error', 'Failed to update security settings', 'error')
       }
     } catch (error) {
       console.error('Error saving security settings:', error)
-      showAlert('Error', 'Error saving security settings', 'error')
+      showAlert('Error', 'Failed to update security settings', 'error')
     }
+    setLoading(false)
   }
 
   const loadMoreActivities = async () => {
@@ -673,14 +675,16 @@ export default function AdminSettings() {
         {activeTab === 'system' && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-xl font-semibold text-suspect-text">Security Settings</h2>
+              <h2 className="text-xl font-semibold text-suspect-text">System Settings</h2>
               <p className="text-suspect-gray-400 mt-1">
-                Configure security and authentication settings for the platform
+                Configure system-wide security and notification settings
               </p>
             </div>
 
-            <div className="card p-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="card p-6 space-y-6">
+              {/* Session Settings */}
+              <div>
+                <h3 className="text-lg font-medium text-suspect-text mb-4">Session Settings</h3>
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-suspect-text mb-2">
@@ -688,7 +692,7 @@ export default function AdminSettings() {
                     </label>
                     <input
                       type="number"
-                      min="30"
+                      min="5"
                       max="1440"
                       value={securitySettings.session_timeout_minutes}
                       onChange={(e) => setSecuritySettings(prev => ({
@@ -696,34 +700,41 @@ export default function AdminSettings() {
                         session_timeout_minutes: parseInt(e.target.value) || 480
                       }))}
                       className="input-field w-full"
-                      placeholder="Session timeout in minutes"
                     />
                     <p className="text-xs text-suspect-gray-400 mt-1">
-                      How long users stay logged in (30-1440 minutes)
+                      Users will be logged out after this period of inactivity
                     </p>
                   </div>
-                  
+                </div>
+              </div>
+
+              {/* Password Settings */}
+              <div>
+                <h3 className="text-lg font-medium text-suspect-text mb-4">Password Settings</h3>
+                <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-suspect-text mb-2">
                       Minimum Password Length
                     </label>
                     <input
                       type="number"
-                      min="6"
-                      max="50"
+                      min="8"
+                      max="32"
                       value={securitySettings.min_password_length}
                       onChange={(e) => setSecuritySettings(prev => ({
                         ...prev,
                         min_password_length: parseInt(e.target.value) || 8
                       }))}
                       className="input-field w-full"
-                      placeholder="Minimum password length"
                     />
-                    <p className="text-xs text-suspect-gray-400 mt-1">
-                      Required minimum characters for passwords (6-50)
-                    </p>
                   </div>
+                </div>
+              </div>
 
+              {/* Login Security */}
+              <div>
+                <h3 className="text-lg font-medium text-suspect-text mb-4">Login Security</h3>
+                <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-suspect-text mb-2">
                       Maximum Login Attempts
@@ -731,22 +742,16 @@ export default function AdminSettings() {
                     <input
                       type="number"
                       min="3"
-                      max="20"
+                      max="10"
                       value={securitySettings.max_login_attempts}
                       onChange={(e) => setSecuritySettings(prev => ({
                         ...prev,
                         max_login_attempts: parseInt(e.target.value) || 5
                       }))}
                       className="input-field w-full"
-                      placeholder="Max login attempts before lockout"
                     />
-                    <p className="text-xs text-suspect-gray-400 mt-1">
-                      Failed attempts before account lockout (3-20)
-                    </p>
                   </div>
-                </div>
 
-                <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-suspect-text mb-2">
                       Account Lockout Duration (minutes)
@@ -761,40 +766,43 @@ export default function AdminSettings() {
                         account_lockout_duration_minutes: parseInt(e.target.value) || 30
                       }))}
                       className="input-field w-full"
-                      placeholder="Lockout duration in minutes"
                     />
-                    <p className="text-xs text-suspect-gray-400 mt-1">
-                      How long accounts stay locked (5-1440 minutes)
-                    </p>
                   </div>
-
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="require-2fa"
-                      checked={securitySettings.require_2fa}
-                      onChange={(e) => setSecuritySettings(prev => ({
-                        ...prev,
-                        require_2fa: e.target.checked
-                      }))}
-                      className="rounded border-suspect-gray-600 text-suspect-primary focus:ring-suspect-primary"
-                    />
-                    <label htmlFor="require-2fa" className="ml-2 text-sm text-suspect-text">
-                      Require two-factor authentication
-                    </label>
-                  </div>
-                  <p className="text-xs text-suspect-gray-400 ml-6">
-                    Force all users to enable 2FA for enhanced security
-                  </p>
                 </div>
               </div>
 
-              <div className="flex justify-end mt-6 pt-4 border-t border-suspect-gray-700">
-                <button 
+              {/* Discord Webhook Settings */}
+              <div>
+                <h3 className="text-lg font-medium text-suspect-text mb-4">Discord Notifications</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-suspect-text mb-2">
+                      Discord Webhook URL
+                    </label>
+                    <input
+                      type="text"
+                      value={securitySettings.discord_webhook_url || ''}
+                      onChange={(e) => setSecuritySettings(prev => ({
+                        ...prev,
+                        discord_webhook_url: e.target.value
+                      }))}
+                      className="input-field w-full"
+                      placeholder="https://discord.com/api/webhooks/..."
+                    />
+                    <p className="text-xs text-suspect-gray-400 mt-1">
+                      Discord webhook URL for stream notifications. Leave empty to disable notifications.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <button
                   onClick={saveSecuritySettings}
+                  disabled={loading}
                   className="btn-primary"
                 >
-                  Save Security Settings
+                  {loading ? <LoadingDots /> : 'Save Settings'}
                 </button>
               </div>
             </div>

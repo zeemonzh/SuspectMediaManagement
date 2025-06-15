@@ -15,6 +15,7 @@ interface SecuritySettings {
   require_2fa: boolean
   max_login_attempts: number
   account_lockout_duration_minutes: number
+  discord_webhook_url?: string
 }
 
 // GET - Fetch current security settings
@@ -54,69 +55,49 @@ export async function GET() {
 // POST - Update security settings
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const {
-      session_timeout_minutes,
-      min_password_length,
-      require_2fa,
-      max_login_attempts,
-      account_lockout_duration_minutes
-    } = body
+    const settings: SecuritySettings = await request.json()
 
-    // Validate inputs
-    if (session_timeout_minutes < 30 || session_timeout_minutes > 1440) {
+    // Validate settings
+    if (
+      settings.session_timeout_minutes < 5 ||
+      settings.session_timeout_minutes > 1440 ||
+      settings.min_password_length < 8 ||
+      settings.min_password_length > 32 ||
+      settings.max_login_attempts < 3 ||
+      settings.max_login_attempts > 10 ||
+      settings.account_lockout_duration_minutes < 5 ||
+      settings.account_lockout_duration_minutes > 1440
+    ) {
       return NextResponse.json(
-        { error: 'Session timeout must be between 30 and 1440 minutes' },
+        { error: 'Invalid settings values' },
         { status: 400 }
       )
     }
 
-    if (min_password_length < 6 || min_password_length > 50) {
+    // Validate Discord webhook URL if provided
+    if (settings.discord_webhook_url && !settings.discord_webhook_url.startsWith('https://discord.com/api/webhooks/')) {
       return NextResponse.json(
-        { error: 'Password length must be between 6 and 50 characters' },
+        { error: 'Invalid Discord webhook URL' },
         { status: 400 }
       )
     }
 
-    if (max_login_attempts < 3 || max_login_attempts > 20) {
-      return NextResponse.json(
-        { error: 'Max login attempts must be between 3 and 20' },
-        { status: 400 }
-      )
-    }
-
-    if (account_lockout_duration_minutes < 5 || account_lockout_duration_minutes > 1440) {
-      return NextResponse.json(
-        { error: 'Account lockout duration must be between 5 and 1440 minutes' },
-        { status: 400 }
-      )
-    }
-
-    const securitySettings: SecuritySettings = {
-      session_timeout_minutes,
-      min_password_length,
-      require_2fa: Boolean(require_2fa),
-      max_login_attempts,
-      account_lockout_duration_minutes
-    }
-
-    // Upsert the security settings
-    const { data: settings, error } = await supabase
-      .from('system_defaults')
-      .upsert({
-        setting_key: 'security_settings',
-        setting_value: securitySettings,
-        description: 'Security and authentication settings for the platform',
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'setting_key'
+    // Update settings
+    const { error } = await supabase
+      .from('system_settings')
+      .update({
+        session_timeout_minutes: settings.session_timeout_minutes,
+        min_password_length: settings.min_password_length,
+        require_2fa: settings.require_2fa,
+        max_login_attempts: settings.max_login_attempts,
+        account_lockout_duration_minutes: settings.account_lockout_duration_minutes,
+        discord_webhook_url: settings.discord_webhook_url || null
       })
-      .select()
-      .single()
+      .eq('id', 1) // We only have one row in system_settings
 
     if (error) throw error
 
-    return NextResponse.json(securitySettings, { status: 200 })
+    return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error updating security settings:', error)
     return NextResponse.json(

@@ -3,6 +3,7 @@ require('dotenv').config();
 
 const { WebcastPushConnection } = require('tiktok-live-connector');
 const { createClient } = require('@supabase/supabase-js');
+const { DiscordWebhook } = require('../src/services/DiscordWebhook');
 
 // Supabase configuration
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -13,6 +14,26 @@ class StreamTracker {
   constructor() {
     this.activeConnections = new Map();
     this.streamSessions = new Map();
+    this.discordWebhook = null;
+  }
+
+  async initialize() {
+    // Get Discord webhook URL from system settings
+    try {
+      const { data: settings, error } = await supabase
+        .from('system_settings')
+        .select('discord_webhook_url')
+        .single();
+
+      if (!error && settings?.discord_webhook_url) {
+        this.discordWebhook = new DiscordWebhook(settings.discord_webhook_url);
+        console.log('✅ Discord webhook initialized');
+      } else {
+        console.log('ℹ️ Discord webhook not configured');
+      }
+    } catch (error) {
+      console.error('Error initializing Discord webhook:', error);
+    }
   }
 
   async getActiveStreamers() {
@@ -41,7 +62,7 @@ class StreamTracker {
   }
 
   async startTracking(streamer) {
-    const { id, tiktok_username } = streamer;
+    const { id, tiktok_username, username } = streamer;
     
     if (this.activeConnections.has(id)) {
       console.log(`Already tracking ${tiktok_username}`);
@@ -58,11 +79,16 @@ class StreamTracker {
       // Store connection
       this.activeConnections.set(id, connection);
 
-      connection.connect().then(state => {
+      connection.connect().then(async state => {
         console.log(`✅ Connected to ${tiktok_username}:`, state);
         
         // Create new stream session
-        this.createStreamSession(id);
+        await this.createStreamSession(id);
+
+        // Send Discord notification for stream start if webhook is configured
+        if (this.discordWebhook) {
+          await this.discordWebhook.notifyStreamStart(username, tiktok_username);
+        }
 
         // Set up 5-second interval to check viewer count
         const viewerCheckInterval = setInterval(() => {
@@ -103,25 +129,25 @@ class StreamTracker {
         this.updateLikeCount(id, data.totalLikeCount);
       });
 
-      connection.on('streamEnd', () => {
+      connection.on('streamEnd', async () => {
         console.log(`🔴 Stream ended for ${tiktok_username}`);
         // Clear the interval when stream ends
         const { viewerCheckInterval } = this.activeConnections.get(id);
         if (viewerCheckInterval) {
           clearInterval(viewerCheckInterval);
         }
-        this.endStreamSession(id);
+        await this.endStreamSession(id);
         this.activeConnections.delete(id);
       });
 
-      connection.on('disconnect', () => {
+      connection.on('disconnect', async () => {
         console.log(`📡 Disconnected from ${tiktok_username}`);
         // Clear the interval on disconnect
         const { viewerCheckInterval } = this.activeConnections.get(id);
         if (viewerCheckInterval) {
           clearInterval(viewerCheckInterval);
         }
-        this.endStreamSession(id);
+        await this.endStreamSession(id);
         this.activeConnections.delete(id);
       });
 
@@ -276,6 +302,13 @@ class StreamTracker {
       : 0;
 
     try {
+      // Get streamer info for Discord notification
+      const { data: streamer } = await supabase
+        .from('streamers')
+        .select('username, tiktok_username')
+        .eq('id', streamerId)
+        .single();
+
       await supabase
         .from('stream_sessions')
         .update({
@@ -288,6 +321,16 @@ class StreamTracker {
           current_viewers: 0
         })
         .eq('id', session.sessionId);
+
+      // Send Discord notification for stream end if webhook is configured
+      if (this.discordWebhook && streamer) {
+        await this.discordWebhook.notifyStreamEnd(
+          streamer.username,
+          streamer.tiktok_username,
+          durationMinutes,
+          session.total_views
+        );
+      }
 
       // Update streamer's monthly stats
       await this.updateMonthlyStats(streamerId, durationMinutes, avgViewers);
@@ -367,6 +410,9 @@ class StreamTracker {
 
   async start() {
     console.log('🚀 Starting SuspectCheats Stream Tracker...');
+    
+    // Initialize Discord webhook
+    await this.initialize();
     
     // Clean up any orphaned sessions from previous runs
     await this.cleanupOrphanedSessions();
