@@ -18,20 +18,20 @@ export async function POST(request: NextRequest) {
 
     console.log('API Registration starting for:', email, 'as role:', role)
 
-    // Validate invitation key for admin accounts
-    if (role === 'admin') {
+    // Validate invitation key for admin and streamer accounts
+    if (role === 'admin' || role === 'streamer') {
       if (!invitationKey) {
         return NextResponse.json(
-          { error: 'Invitation key is required for admin accounts' },
+          { error: `Invitation key is required for ${role} accounts` },
           { status: 400 }
         )
       }
 
-      console.log('Validating admin invitation key:', invitationKey)
+      console.log(`Validating ${role} invitation key:`, invitationKey)
       
       // Check if invitation key is valid and unused
       const { data: invitation, error: inviteError } = await supabase
-        .from('admin_invitations')
+        .from(role === 'admin' ? 'admin_invitations' : 'streamer_invitations')
         .select('*')
         .eq('invitation_key', invitationKey)
         .eq('is_used', false)
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
       role,
       username: username || email.split('@')[0],
       tiktokUsername: role === 'streamer' ? (tiktokUsername || '') : null,
-      invitationKey: role === 'admin' ? invitationKey : null
+      invitationKey: role === 'admin' || role === 'streamer' ? invitationKey : null
     }
 
     // Use regular signup flow which will send confirmation email

@@ -121,11 +121,11 @@ export async function POST(request: NextRequest) {
 
     console.log('Streamer record created successfully')
 
-    // Mark invitation key as used for admin accounts
-    if (role === 'admin' && invitationKey) {
-      console.log('Marking invitation key as used...')
+    // Mark invitation key as used for admin and streamer accounts
+    if ((role === 'admin' || role === 'streamer') && invitationKey) {
+      console.log(`Marking ${role} invitation key as used...`)
       const { error: keyUpdateError } = await supabase
-        .from('admin_invitations')
+        .from(role === 'admin' ? 'admin_invitations' : 'streamer_invitations')
         .update({
           used_by: userId,
           is_used: true,

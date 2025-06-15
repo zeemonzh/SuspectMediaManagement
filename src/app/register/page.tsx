@@ -191,11 +191,11 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* Admin Invitation Key Field - moved to top */}
-            {role === 'admin' && (
+            {/* Admin/Streamer Invitation Key Field - moved to top */}
+            {(role === 'admin' || role === 'streamer') && (
               <div>
                 <label htmlFor="invitationKey" className="block text-sm font-medium text-suspect-text mb-2">
-                  Admin Invitation Key
+                  {role === 'admin' ? 'Admin' : 'Streamer'} Invitation Key
                 </label>
                 <input
                   id="invitationKey"
@@ -208,7 +208,7 @@ export default function RegisterPage() {
                   placeholder="Enter your invitation key"
                 />
                 <p className="text-xs text-suspect-gray-400 mt-1">
-                  Admin accounts require a valid invitation key
+                  {role === 'admin' ? 'Admin' : 'Streamer'} accounts require a valid invitation key
                 </p>
               </div>
             )}

@@ -41,7 +41,8 @@ export default function AdminSettings() {
   const { user, isAdmin, loading: authLoading } = useAuth()
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<'invitations' | 'users' | 'system' | 'logs'>('invitations')
-  const [invitationKeys, setInvitationKeys] = useState<InvitationKey[]>([])
+  const [adminInvitationKeys, setAdminInvitationKeys] = useState<InvitationKey[]>([])
+  const [streamerInvitationKeys, setStreamerInvitationKeys] = useState<InvitationKey[]>([])
   const [streamers, setStreamers] = useState<any[]>([])
   const [securitySettings, setSecuritySettings] = useState<SecuritySettings>({
     session_timeout_minutes: 480,
@@ -58,6 +59,7 @@ export default function AdminSettings() {
   const [loading, setLoading] = useState(true)
   const [showCreateKeyModal, setShowCreateKeyModal] = useState(false)
   const [newKeyCount, setNewKeyCount] = useState(1)
+  const [keyType, setKeyType] = useState<'admin' | 'streamer'>('streamer')
 
   // Simple cache to avoid refetching data when switching tabs
   const [dataCache, setDataCache] = useState<{
@@ -183,13 +185,22 @@ export default function AdminSettings() {
 
   const fetchInvitationKeys = async () => {
     try {
-      const response = await fetch('/api/admin/invitation-keys')
-      if (response.ok) {
-        const data = await response.json()
-        setInvitationKeys(data)
+      // Fetch admin invitation keys
+      const adminResponse = await fetch('/api/admin/invitation-keys')
+      if (adminResponse.ok) {
+        const adminKeys = await adminResponse.json()
+        setAdminInvitationKeys(adminKeys)
+      }
+
+      // Fetch streamer invitation keys
+      const streamerResponse = await fetch('/api/admin/streamer-invitation-keys')
+      if (streamerResponse.ok) {
+        const streamerKeys = await streamerResponse.json()
+        setStreamerInvitationKeys(streamerKeys)
       }
     } catch (error) {
       console.error('Error fetching invitation keys:', error)
+      showAlert('Error', 'Failed to fetch invitation keys', 'error')
     }
   }
 
@@ -246,7 +257,7 @@ export default function AdminSettings() {
 
   const generateInvitationKeys = async () => {
     try {
-      const response = await fetch('/api/admin/invitation-keys', {
+      const response = await fetch(`/api/admin/${keyType}-invitation-keys`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -260,19 +271,19 @@ export default function AdminSettings() {
         await fetchInvitationKeys()
         // Invalidate cache for invitations tab
         setDataCache(prev => ({ ...prev, invitations: false }))
-        showAlert('Success', `${newKeyCount} invitation key(s) generated successfully!`, 'success')
+        showAlert('Success', `${newKeyCount} ${keyType} invitation key(s) generated successfully!`, 'success')
       } else {
-        showAlert('Error', 'Error generating invitation keys', 'error')
+        showAlert('Error', `Error generating ${keyType} invitation keys`, 'error')
       }
     } catch (error) {
       console.error('Error generating keys:', error)
-      showAlert('Error', 'Error generating invitation keys', 'error')
+      showAlert('Error', `Error generating ${keyType} invitation keys`, 'error')
     }
   }
 
-  const deleteKey = async (keyId: string, keyCode: string, usedBy?: string) => {
+  const deleteKey = async (keyId: string, keyCode: string, type: 'admin' | 'streamer', usedBy: string | null) => {
     try {
-      const response = await fetch(`/api/admin/invitation-keys/${keyId}`, {
+      const response = await fetch(`/api/admin/${type}-invitation-keys/${keyId}`, {
         method: 'DELETE'
       })
 
@@ -281,13 +292,13 @@ export default function AdminSettings() {
         await fetchInvitationKeys()
         // Invalidate cache
         setDataCache(prev => ({ ...prev, invitations: false, users: false }))
-        showAlert('Success', result.message || 'Invitation key deleted successfully!', 'success')
+        showAlert('Success', result.message || `${type} invitation key deleted successfully!`, 'success')
       } else {
-        showAlert('Error', 'Error deleting invitation key', 'error')
+        showAlert('Error', `Error deleting ${type} invitation key`, 'error')
       }
     } catch (error) {
       console.error('Error deleting key:', error)
-      showAlert('Error', 'Error deleting invitation key', 'error')
+      showAlert('Error', `Error deleting ${type} invitation key`, 'error')
     }
   }
 
@@ -478,7 +489,7 @@ export default function AdminSettings() {
               <div>
                 <h2 className="text-xl font-semibold text-suspect-text">Invitation Keys</h2>
                 <p className="text-suspect-gray-400 mt-1">
-                  Generate and manage invitation keys for new registrations. Deleting a used key will also delete the associated admin account.
+                  Generate and manage invitation keys for new registrations. Deleting a used key will also delete the associated account.
                 </p>
               </div>
               <button
@@ -489,79 +500,83 @@ export default function AdminSettings() {
               </button>
             </div>
 
+            {/* Admin Keys Section */}
             <div className="card p-6">
+              <h3 className="text-lg font-medium text-suspect-text mb-4">Admin Invitation Keys</h3>
               <div className="overflow-x-auto">
-                <div className="max-h-80 overflow-y-auto border border-suspect-gray-700 rounded-lg">
-                  <table className="w-full">
-                    <thead className="sticky top-0 bg-suspect-header z-10">
-                      <tr className="border-b border-suspect-gray-700">
-                        <th className="text-left text-suspect-gray-400 py-3 px-4">Invitation Code</th>
-                        <th className="text-left text-suspect-gray-400 py-3 px-4">Status</th>
-                        <th className="text-left text-suspect-gray-400 py-3 px-4">Created</th>
-                        <th className="text-left text-suspect-gray-400 py-3 px-4">Used By</th>
-                        <th className="text-left text-suspect-gray-400 py-3 px-4">Actions</th>
+                <table className="min-w-full">
+                  <thead>
+                    <tr>
+                      <th className="text-left text-suspect-gray-400 font-medium">Key</th>
+                      <th className="text-left text-suspect-gray-400 font-medium">Created</th>
+                      <th className="text-left text-suspect-gray-400 font-medium">Status</th>
+                      <th className="text-left text-suspect-gray-400 font-medium">Used By</th>
+                      <th className="text-left text-suspect-gray-400 font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {adminInvitationKeys.map((key) => (
+                      <tr key={key.id} className="border-t border-suspect-gray-800">
+                        <td className="py-3">{key.code}</td>
+                        <td className="py-3">{new Date(key.created_at).toLocaleDateString()}</td>
+                        <td className="py-3">
+                          <span className={`px-2 py-1 rounded text-xs ${key.is_active ? 'bg-green-900/20 text-green-400' : 'bg-red-900/20 text-red-400'}`}>
+                            {key.is_active ? 'Active' : 'Used'}
+                          </span>
+                        </td>
+                        <td className="py-3">{key.used_by || '-'}</td>
+                        <td className="py-3">
+                          <button
+                            onClick={() => deleteKey(key.id, key.code, 'admin', key.used_by || null)}
+                            className="text-red-400 hover:text-red-300"
+                          >
+                            Delete
+                          </button>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {invitationKeys.map((key) => (
-                        <tr key={key.id} className="border-b border-suspect-gray-800 hover:bg-suspect-gray-800/30 transition-colors">
-                          <td className="text-suspect-text py-4 px-4 font-mono">
-                            <div className="flex items-center space-x-2">
-                              <span>{key.code}</span>
-                              <button
-                                onClick={() => copyToClipboard(key.code)}
-                                className="text-suspect-gray-400 hover:text-suspect-text"
-                                title="Copy to clipboard"
-                              >
-                                📋
-                              </button>
-                            </div>
-                          </td>
-                          <td className="py-4 px-4">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              key.used_at 
-                                ? 'bg-blue-500/20 text-blue-400' 
-                                : 'bg-green-500/20 text-green-400'
-                            }`}>
-                              {key.used_at ? 'Used' : 'Active'}
-                            </span>
-                          </td>
-                          <td className="text-suspect-gray-400 py-4 px-4">
-                            {new Date(key.created_at).toLocaleDateString()}
-                          </td>
-                          <td className="text-suspect-text py-4 px-4">
-                            {key.used_by || '-'}
-                          </td>
-                          <td className="py-4 px-4">
-                            <button
-                              onClick={() => setDeleteKeyDialog({
-                                isOpen: true,
-                                keyId: key.id,
-                                keyCode: key.code,
-                                usedBy: key.used_by
-                              })}
-                              className="text-red-400 hover:text-red-300 text-sm"
-                            >
-                              Delete
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                      {invitationKeys.length === 0 && (
-                        <tr>
-                          <td colSpan={5} className="text-center text-suspect-gray-400 py-8">
-                            No invitation keys found. Generate some to get started.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-                {invitationKeys.length > 5 && (
-                  <div className="text-center text-suspect-gray-400 text-sm mt-2">
-                    Showing {invitationKeys.length} keys • Scroll to view more
-                  </div>
-                )}
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Streamer Keys Section */}
+            <div className="card p-6">
+              <h3 className="text-lg font-medium text-suspect-text mb-4">Streamer Invitation Keys</h3>
+              <div className="overflow-x-auto">
+                <table className="min-w-full">
+                  <thead>
+                    <tr>
+                      <th className="text-left text-suspect-gray-400 font-medium">Key</th>
+                      <th className="text-left text-suspect-gray-400 font-medium">Created</th>
+                      <th className="text-left text-suspect-gray-400 font-medium">Status</th>
+                      <th className="text-left text-suspect-gray-400 font-medium">Used By</th>
+                      <th className="text-left text-suspect-gray-400 font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {streamerInvitationKeys.map((key) => (
+                      <tr key={key.id} className="border-t border-suspect-gray-800">
+                        <td className="py-3">{key.code}</td>
+                        <td className="py-3">{new Date(key.created_at).toLocaleDateString()}</td>
+                        <td className="py-3">
+                          <span className={`px-2 py-1 rounded text-xs ${key.is_active ? 'bg-green-900/20 text-green-400' : 'bg-red-900/20 text-red-400'}`}>
+                            {key.is_active ? 'Active' : 'Used'}
+                          </span>
+                        </td>
+                        <td className="py-3">{key.used_by || '-'}</td>
+                        <td className="py-3">
+                          <button
+                            onClick={() => deleteKey(key.id, key.code, 'streamer', key.used_by || null)}
+                            className="text-red-400 hover:text-red-300"
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -895,6 +910,42 @@ export default function AdminSettings() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-suspect-text mb-2">
+                  Key Type
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setKeyType('streamer')}
+                    className={`p-3 rounded-lg border-2 transition-all ${
+                      keyType === 'streamer'
+                        ? 'border-suspect-primary bg-suspect-primary/10'
+                        : 'border-suspect-gray-600 hover:border-suspect-gray-500'
+                    }`}
+                  >
+                    <div className="text-left">
+                      <h3 className="text-sm font-medium text-suspect-text">Streamer</h3>
+                      <p className="text-xs text-suspect-gray-400">For streamer accounts</p>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setKeyType('admin')}
+                    className={`p-3 rounded-lg border-2 transition-all ${
+                      keyType === 'admin'
+                        ? 'border-suspect-primary bg-suspect-primary/10'
+                        : 'border-suspect-gray-600 hover:border-suspect-gray-500'
+                    }`}
+                  >
+                    <div className="text-left">
+                      <h3 className="text-sm font-medium text-suspect-text">Admin</h3>
+                      <p className="text-xs text-suspect-gray-400">For admin accounts</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-suspect-text mb-2">
                   Number of keys to generate
                 </label>
                 <input
@@ -957,12 +1008,12 @@ export default function AdminSettings() {
         isOpen={deleteKeyDialog.isOpen}
         onClose={() => setDeleteKeyDialog(prev => ({ ...prev, isOpen: false }))}
         onConfirm={() => {
-          deleteKey(deleteKeyDialog.keyId, deleteKeyDialog.keyCode, deleteKeyDialog.usedBy)
+          deleteKey(deleteKeyDialog.keyId, deleteKeyDialog.keyCode, keyType, deleteKeyDialog.usedBy || null)
           setDeleteKeyDialog(prev => ({ ...prev, isOpen: false }))
         }}
         title="Delete Invitation Key"
         message={deleteKeyDialog.usedBy 
-          ? `Are you sure you want to delete invitation key "${deleteKeyDialog.keyCode}"?\n\nThis will also DELETE the admin account that used this key: ${deleteKeyDialog.usedBy}\n\nThis action cannot be undone!`
+          ? `Are you sure you want to delete invitation key "${deleteKeyDialog.keyCode}"?\n\nThis will also DELETE the ${keyType} account that used this key: ${deleteKeyDialog.usedBy}\n\nThis action cannot be undone!`
           : `Are you sure you want to delete invitation key "${deleteKeyDialog.keyCode}"?\n\nThis action cannot be undone!`
         }
         confirmText="Delete"
