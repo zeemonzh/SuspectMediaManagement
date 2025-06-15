@@ -11,7 +11,7 @@ interface StreamerAnalytics {
   id: string
   username: string
   totalHours: number
-  avgViewers: number
+  totalViews: number
   totalStreams: number
   goalCompletion: number
   goalDetails: {
@@ -98,9 +98,7 @@ export async function GET(request: NextRequest) {
       const totalStreams = streamerSessions.length
       const totalMinutes = streamerSessions.reduce((sum, s) => sum + (s.duration_minutes || 0), 0)
       const totalHours = Math.round((totalMinutes / 60) * 10) / 10
-      const avgViewers = totalStreams > 0 
-        ? Math.round(streamerSessions.reduce((sum, s) => sum + (s.average_viewers || 0), 0) / totalStreams)
-        : 0
+      const totalViews = streamerSessions.reduce((sum, s) => sum + (s.total_viewers || 0), 0)
       
       // Get last stream
       const lastStreamSession = streamerSessions
@@ -155,25 +153,23 @@ export async function GET(request: NextRequest) {
       const previousPeriodStart = new Date(startDate.getTime() - (now.getTime() - startDate.getTime()))
       const { data: previousSessions } = await supabase
         .from('stream_sessions')
-        .select('average_viewers')
+        .select('total_viewers')
         .eq('streamer_id', streamer.id)
         .gte('start_time', previousPeriodStart.toISOString())
         .lt('start_time', startDate.toISOString())
         .not('duration_minutes', 'is', null)
       
-      const prevAvgViewers = previousSessions && previousSessions.length > 0
-        ? Math.round(previousSessions.reduce((sum, s) => sum + (s.average_viewers || 0), 0) / previousSessions.length)
-        : 0
+      const prevTotalViews = previousSessions?.reduce((sum, s) => sum + (s.total_viewers || 0), 0) || 0
       
-      const growthRate = prevAvgViewers > 0 
-        ? Math.round(((avgViewers - prevAvgViewers) / prevAvgViewers) * 100 * 10) / 10
-        : avgViewers > 0 ? 100 : 0
+      const growthRate = prevTotalViews > 0 
+        ? Math.round(((totalViews - prevTotalViews) / prevTotalViews) * 100 * 10) / 10
+        : totalViews > 0 ? 100 : 0
       
       streamerAnalytics.push({
         id: streamer.id,
         username: streamer.username,
         totalHours,
-        avgViewers,
+        totalViews,
         totalStreams,
         goalCompletion,
         goalDetails,

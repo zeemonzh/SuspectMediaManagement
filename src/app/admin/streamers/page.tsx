@@ -17,7 +17,7 @@ interface Streamer {
   is_active: boolean
   created_at: string
   total_hours: number
-  avg_viewers: number
+  total_views: number
   total_payout: number
 }
 
@@ -192,7 +192,7 @@ export default function AdminStreamers() {
                     <th className="text-left text-suspect-gray-400 py-3 px-4">Email</th>
                     <th className="text-left text-suspect-gray-400 py-3 px-4">Joined</th>
                     <th className="text-left text-suspect-gray-400 py-3 px-4">Hours</th>
-                    <th className="text-left text-suspect-gray-400 py-3 px-4">Avg Viewers</th>
+                    <th className="text-left text-suspect-gray-400 py-3 px-4">Total Views</th>
                     <th className="text-left text-suspect-gray-400 py-3 px-4">Total Payout</th>
                     <th className="text-left text-suspect-gray-400 py-3 px-4">Status</th>
                     <th className="text-left text-suspect-gray-400 py-3 px-4">Actions</th>
@@ -224,7 +224,7 @@ export default function AdminStreamers() {
                           {streamer.total_hours}h
                         </td>
                         <td className="text-suspect-text py-4 px-4">
-                          {streamer.avg_viewers.toLocaleString()}
+                          {streamer.total_views.toLocaleString()}
                         </td>
                         <td className="text-suspect-text py-4 px-4">
                           ${streamer.total_payout}

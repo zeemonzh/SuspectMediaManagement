@@ -13,9 +13,7 @@ interface StreamSession {
   start_time: string
   end_time?: string
   duration_minutes?: number
-  average_viewers?: number
   total_viewers?: number
-  peak_viewers?: number
   payout_amount?: number
   admin_notes?: string
   streamers: {
@@ -29,7 +27,7 @@ interface StreamStats {
   totalSessions: number
   activeSessions: number
   totalHours: number
-  avgViewers: number
+  totalViews: number
   totalPayouts: number
 }
 
@@ -42,7 +40,7 @@ export default function AdminSessions() {
     totalSessions: 0,
     activeSessions: 0,
     totalHours: 0,
-    avgViewers: 0,
+    totalViews: 0,
     totalPayouts: 0
   })
   const [loading, setLoading] = useState(true)
@@ -251,37 +249,34 @@ export default function AdminSessions() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-          <div className="card p-6 hover:scale-105 transition-all duration-300 hover:shadow-lg hover:shadow-suspect-primary/10 group">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+          <div className="card p-6">
             <div className="text-center">
-              <p className="text-2xl font-bold text-suspect-text group-hover:scale-110 transition-transform duration-300">{stats.totalSessions}</p>
+              <p className="text-2xl font-bold text-suspect-text">{stats.totalSessions}</p>
               <p className="text-suspect-gray-400 text-sm">Total Sessions</p>
             </div>
           </div>
-          <div className="card p-6 hover:scale-105 transition-all duration-300 hover:shadow-lg hover:shadow-red-400/10 group">
+          <div className="card p-6">
             <div className="text-center">
-              <div className="flex items-center justify-center space-x-2">
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                <p className="text-2xl font-bold text-red-400 group-hover:scale-110 transition-transform duration-300">{stats.activeSessions}</p>
-              </div>
+              <p className="text-2xl font-bold text-red-400">{stats.activeSessions}</p>
               <p className="text-suspect-gray-400 text-sm">Live Now</p>
             </div>
           </div>
-          <div className="card p-6 hover:scale-105 transition-all duration-300 hover:shadow-lg hover:shadow-blue-400/10 group">
+          <div className="card p-6">
             <div className="text-center">
-              <p className="text-2xl font-bold text-blue-400 group-hover:scale-110 transition-transform duration-300">{stats.totalHours}h</p>
+              <p className="text-2xl font-bold text-blue-400">{stats.totalHours}h</p>
               <p className="text-suspect-gray-400 text-sm">Total Hours</p>
             </div>
           </div>
-          <div className="card p-6 hover:scale-105 transition-all duration-300 hover:shadow-lg hover:shadow-green-400/10 group">
+          <div className="card p-6">
             <div className="text-center">
-              <p className="text-2xl font-bold text-green-400 group-hover:scale-110 transition-transform duration-300">{stats.avgViewers.toLocaleString()}</p>
-              <p className="text-suspect-gray-400 text-sm">Avg Viewers</p>
+              <p className="text-2xl font-bold text-green-400">{stats?.totalViews?.toLocaleString() || '0'}</p>
+              <p className="text-suspect-gray-400 text-sm">Total Views</p>
             </div>
           </div>
-          <div className="card p-6 hover:scale-105 transition-all duration-300 hover:shadow-lg hover:shadow-suspect-primary/10 group">
+          <div className="card p-6">
             <div className="text-center">
-              <p className="text-2xl font-bold text-suspect-primary group-hover:scale-110 transition-transform duration-300">${stats.totalPayouts.toFixed(2)}</p>
+              <p className="text-2xl font-bold text-suspect-primary">${stats.totalPayouts}</p>
               <p className="text-suspect-gray-400 text-sm">Total Payouts</p>
             </div>
           </div>
@@ -364,7 +359,7 @@ export default function AdminSessions() {
                         </p>
                       </div>
                       <div>
-                        <p className="text-suspect-gray-400 text-xs">Current Viewers</p>
+                        <p className="text-suspect-gray-400 text-xs">Total Views</p>
                         <p className="text-suspect-text font-medium">
                           {session.total_viewers?.toLocaleString() || 'N/A'}
                         </p>
@@ -373,12 +368,6 @@ export default function AdminSessions() {
                         <p className="text-suspect-gray-400 text-xs">Started</p>
                         <p className="text-suspect-text font-medium text-xs">
                           {formatTimestamp(session.start_time)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-suspect-gray-400 text-xs">Peak Viewers</p>
-                        <p className="text-suspect-text font-medium">
-                          {session.peak_viewers?.toLocaleString() || 'N/A'}
                         </p>
                       </div>
                     </div>
@@ -482,8 +471,7 @@ export default function AdminSessions() {
                         <th className="text-left text-suspect-gray-400 py-3 px-4">Streamer</th>
                         <th className="text-left text-suspect-gray-400 py-3 px-4">Start Time</th>
                         <th className="text-left text-suspect-gray-400 py-3 px-4">Duration</th>
-                        <th className="text-left text-suspect-gray-400 py-3 px-4">Avg Viewers</th>
-                        <th className="text-left text-suspect-gray-400 py-3 px-4">Peak Viewers</th>
+                        <th className="text-left text-suspect-gray-400 py-3 px-4">Total Views</th>
                         <th className="text-left text-suspect-gray-400 py-3 px-4">Payout</th>
                         <th className="text-left text-suspect-gray-400 py-3 px-4">Status</th>
                         <th className="text-left text-suspect-gray-400 py-3 px-4">Actions</th>
@@ -505,10 +493,7 @@ export default function AdminSessions() {
                             {session.is_live ? getCurrentDuration(session.start_time) : formatDuration(session.duration_minutes)}
                           </td>
                           <td className="text-suspect-text py-4 px-4">
-                            {session.average_viewers?.toLocaleString() || '-'}
-                          </td>
-                          <td className="text-suspect-text py-4 px-4">
-                            {session.peak_viewers?.toLocaleString() || '-'}
+                            {session.total_viewers?.toLocaleString() || '-'}
                           </td>
                           <td className="text-suspect-text py-4 px-4">
                             {session.payout_amount ? `$${session.payout_amount.toFixed(2)}` : '-'}
@@ -657,18 +642,12 @@ function SessionDetailsModal({
                   </p>
                 </div>
                 <div className="card p-4">
-                  <p className="text-suspect-gray-400 text-sm">Average Viewers</p>
+                  <p className="text-suspect-gray-400 text-sm">Total Views</p>
                   <p className="text-suspect-text font-bold text-xl">
-                    {session.average_viewers?.toLocaleString() || 'N/A'}
+                    {session.total_viewers?.toLocaleString() || 'N/A'}
                   </p>
                 </div>
-                <div className="card p-4">
-                  <p className="text-suspect-gray-400 text-sm">Peak Viewers</p>
-                  <p className="text-suspect-text font-bold text-xl">
-                    {session.peak_viewers?.toLocaleString() || 'N/A'}
-                  </p>
-                </div>
-                <div className="card p-4">
+                <div className="card p-4 col-span-2">
                   <p className="text-suspect-gray-400 text-sm">Payout Amount</p>
                   <p className="text-suspect-text font-bold text-xl">
                     ${session.payout_amount?.toFixed(2) || '0.00'}

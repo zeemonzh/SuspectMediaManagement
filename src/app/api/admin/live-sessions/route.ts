@@ -31,8 +31,6 @@ export async function GET(request: NextRequest) {
       ...session,
       is_live: true,
       // Ensure viewer data is properly formatted
-      average_viewers: session.average_viewers || 0,
-      peak_viewers: session.peak_viewers || 0,
       total_viewers: session.total_viewers || 0
     })) || []
 

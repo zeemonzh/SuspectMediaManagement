@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
         *,
         stream_sessions!left(
           duration_minutes,
-          average_viewers,
+          total_viewers,
           payout_amount
         ),
         payout_requests!left(
@@ -43,14 +43,10 @@ export async function GET(request: NextRequest) {
         ) / 60 * 10
       ) / 10
 
-      // Calculate average viewers across all sessions
-      const avg_viewers = sessions.length > 0 
-        ? Math.round(
-            sessions.reduce((sum: number, session: any) => 
-              sum + (session.average_viewers || 0), 0
-            ) / sessions.length
-          )
-        : 0
+      // Calculate total views across all sessions
+      const total_views = sessions.reduce((sum: number, session: any) => 
+        sum + (session.total_viewers || 0), 0
+      )
 
       // Calculate total payout amount (approved and paid requests)
       const total_payout = payoutRequests
@@ -63,7 +59,7 @@ export async function GET(request: NextRequest) {
       return {
         ...cleanStreamer,
         total_hours,
-        avg_viewers,
+        total_views,
         total_payout
       }
     }) || []

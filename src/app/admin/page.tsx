@@ -15,7 +15,7 @@ interface DashboardStats {
   pendingPayouts: number
   pendingKeyRequests: number
   totalHours: number
-  avgViewers: number
+  totalViews: number
 }
 
 interface Activity {
@@ -24,6 +24,14 @@ interface Activity {
   message: string
   timestamp: string
   color: string
+}
+
+interface StatCard {
+  title: string
+  value: string | number
+  icon: string
+  color: string
+  subtitle?: string
 }
 
 export default function AdminDashboard() {
@@ -35,7 +43,7 @@ export default function AdminDashboard() {
     pendingPayouts: 0,
     pendingKeyRequests: 0,
     totalHours: 0,
-    avgViewers: 0
+    totalViews: 0
   })
   const [recentActivity, setRecentActivity] = useState<Activity[]>([])
   const [loadingStats, setLoadingStats] = useState(true)
@@ -163,7 +171,7 @@ export default function AdminDashboard() {
     return null
   }
 
-  const statCards = [
+  const statCards: StatCard[] = [
     {
       title: 'Total Streamers',
       value: stats.totalStreamers,
@@ -195,8 +203,8 @@ export default function AdminDashboard() {
       color: 'bg-indigo-500'
     },
     {
-      title: 'Avg Viewers',
-      value: stats.avgViewers.toLocaleString(),
+      title: 'Total Views (Week)',
+      value: stats.totalViews.toLocaleString(),
       icon: '👀',
       color: 'bg-pink-500'
     }
@@ -290,6 +298,9 @@ export default function AdminDashboard() {
                       <span className="animate-fade-in">{card.value}</span>
                     )}
                   </div>
+                  {card.subtitle && (
+                    <p className="text-suspect-gray-400 text-sm">{card.subtitle}</p>
+                  )}
                 </div>
               </div>
             </div>

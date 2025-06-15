@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     // Get total hours from all sessions (both completed and live)
     const { data: allSessions } = await supabase
       .from('stream_sessions')
-      .select('duration_minutes, start_time, end_time')
+      .select('duration_minutes, start_time, end_time, total_viewers')
 
     const totalMinutes = allSessions?.reduce((sum, session) => {
       if (session.duration_minutes) {
@@ -43,16 +43,9 @@ export async function GET(request: NextRequest) {
 
     const totalHours = Math.round((totalMinutes / 60) * 10) / 10
 
-    // Get average viewers across all sessions
-    const { data: viewerSessions } = await supabase
-      .from('stream_sessions')
-      .select('average_viewers')
-      .not('average_viewers', 'is', null)
-
-    const avgViewers = viewerSessions?.length 
-      ? Math.round(viewerSessions.reduce((sum, session) => 
-          sum + (session.average_viewers || 0), 0) / viewerSessions.length)
-      : 0
+    // Calculate total views across all sessions
+    const totalViews = allSessions?.reduce((sum, session) => 
+      sum + (session.total_viewers || 0), 0) || 0
 
     // Get total payouts from stream sessions
     const { data: payoutSessions } = await supabase
@@ -60,14 +53,14 @@ export async function GET(request: NextRequest) {
       .select('payout_amount')
       .not('payout_amount', 'is', null)
 
-    const totalPayouts = payoutSessions?.reduce((sum, session) => 
-      sum + (session.payout_amount || 0), 0) || 0
+    const totalPayouts = Math.round((payoutSessions || []).reduce((sum, session) => 
+      sum + (session.payout_amount || 0), 0) * 100) / 100
 
     return NextResponse.json({
       totalSessions: totalSessions || 0,
       activeSessions: activeSessions || 0,
       totalHours,
-      avgViewers,
+      totalViews,
       totalPayouts
     })
 

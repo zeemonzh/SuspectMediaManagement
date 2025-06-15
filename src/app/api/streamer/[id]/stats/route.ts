@@ -34,8 +34,8 @@ export async function GET(
     // Calculate stats
     const totalStreams = sessions.length
     const totalHours = sessions.reduce((sum, session) => sum + (session.duration_minutes || 0), 0) / 60
-    const avgViewers = sessions.length > 0 
-      ? Math.round(sessions.reduce((sum, session) => sum + (session.average_viewers || 0), 0) / sessions.length)
+    const totalViews = sessions.length > 0 
+      ? sessions.reduce((sum, session) => sum + (session.total_viewers || 0), 0)
       : 0
 
     // Get current month's data
@@ -76,7 +76,7 @@ export async function GET(
     const recentStreams = sessions.slice(0, 5).map(session => ({
       date: new Date(session.start_time).toISOString().split('T')[0],
       duration: `${Math.floor((session.duration_minutes || 0) / 60)}h ${(session.duration_minutes || 0) % 60}m`,
-      viewers: session.peak_viewers || 0,
+      viewers: session.total_viewers || 0,
       likes: session.total_likes || 0
     }))
 
@@ -84,7 +84,7 @@ export async function GET(
       streamer,
       stats: {
         totalHours: Math.round(totalHours),
-        avgViewers,
+        totalViews,
         totalStreams,
         currentMonthHours: Math.round(currentMonthHours),
         goalProgress: goal ? Math.round((goal.current_hours / goal.target_hours) * 100) : 0,
@@ -95,7 +95,7 @@ export async function GET(
         targetHours: 60,
         targetViewers: 2000,
         currentHours: Math.round(currentMonthHours),
-        currentViewers: avgViewers
+        currentViewers: totalViews
       },
       recentStreams
     })

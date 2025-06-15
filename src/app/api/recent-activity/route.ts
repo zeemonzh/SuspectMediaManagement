@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
         // Add stream end activity if stream has ended
         if (stream.end_time) {
           const duration = stream.duration_minutes ? `(${Math.round(stream.duration_minutes / 60 * 10) / 10}h)` : ''
-          const viewerInfo = stream.average_viewers ? ` - ${stream.average_viewers} avg viewers` : ''
+          const viewerInfo = stream.total_viewers ? ` - ${stream.total_viewers} total views` : ''
           
           activities.push({
             id: `stream-end-${stream.id}`,

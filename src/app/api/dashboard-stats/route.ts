@@ -83,17 +83,16 @@ export async function GET(request: NextRequest) {
 
     const totalHours = Math.round((totalMinutes / 60) * 10) / 10 // Round to 1 decimal place
 
-    // Get average viewers this week
+    // Get total views this week
     const { data: viewerSessions } = await supabase
       .from('stream_sessions')
-      .select('average_viewers, total_viewers')
+      .select('total_viewers')
       .gte('start_time', thisWeek.toISOString())
-      .not('average_viewers', 'is', null)
+      .not('total_viewers', 'is', null)
 
-    let avgViewers = 0
+    let totalViews = 0;
     if (viewerSessions?.length) {
-      const totalViewers = viewerSessions.reduce((sum, session) => sum + (session.total_viewers || session.average_viewers || 0), 0)
-      avgViewers = Math.round(totalViewers / viewerSessions.length)
+      totalViews = viewerSessions.reduce((sum, session) => sum + (session.total_viewers || 0), 0);
     }
 
     // Add cache-control headers to prevent stale data
@@ -110,7 +109,7 @@ export async function GET(request: NextRequest) {
       pendingPayouts: pendingPayouts || 0,
       pendingKeyRequests: pendingKeyRequests || 0,
       totalHours,
-      avgViewers
+      totalViews
     }, { headers })
 
   } catch (error) {

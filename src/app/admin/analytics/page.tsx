@@ -8,7 +8,7 @@ interface StreamerAnalytics {
   id: string
   username: string
   totalHours: number
-  avgViewers: number
+  totalViews: number
   totalStreams: number
   goalCompletion: number
   goalDetails: {
@@ -380,7 +380,7 @@ export default function AdminAnalytics() {
     }
   }
 
-  const topPerformers = streamers.sort((a, b) => b.avgViewers - a.avgViewers).slice(0, 3)
+  const topPerformers = streamers.sort((a, b) => b.totalViews - a.totalViews).slice(0, 3)
   const improvingStreamers = streamers.filter(s => s.growthRate > 0).sort((a, b) => b.growthRate - a.growthRate)
 
   if (loading) {
@@ -544,8 +544,8 @@ export default function AdminAnalytics() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-suspect-text font-medium">{streamer.avgViewers.toLocaleString()}</p>
-                    <p className="text-suspect-gray-400 text-sm">avg viewers</p>
+                    <p className="text-suspect-text font-medium">{streamer.totalViews.toLocaleString()}</p>
+                    <p className="text-suspect-gray-400 text-sm">total views</p>
                   </div>
                 </div>
               ))}
@@ -587,7 +587,7 @@ export default function AdminAnalytics() {
                   <tr className="border-b border-suspect-gray-700">
                     <th className="text-left text-suspect-gray-400 py-3 px-4">Streamer</th>
                     <th className="text-left text-suspect-gray-400 py-3 px-4">Hours</th>
-                    <th className="text-left text-suspect-gray-400 py-3 px-4">Avg Viewers</th>
+                    <th className="text-left text-suspect-gray-400 py-3 px-4">Total Views</th>
                     <th className="text-left text-suspect-gray-400 py-3 px-4">Streams</th>
                     <th className="text-left text-suspect-gray-400 py-3 px-4">Goal Progress</th>
                     <th className="text-left text-suspect-gray-400 py-3 px-4">Growth</th>
@@ -604,7 +604,7 @@ export default function AdminAnalytics() {
                         {streamer.totalHours}h
                       </td>
                       <td className="text-suspect-text py-4 px-4">
-                        {streamer.avgViewers.toLocaleString()}
+                        {streamer.totalViews.toLocaleString()}
                       </td>
                       <td className="text-suspect-text py-4 px-4">
                         {streamer.totalStreams}
